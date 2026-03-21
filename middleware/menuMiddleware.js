@@ -42,28 +42,55 @@ const loadMenus = async (req, res, next) => {
     }
 };
 
-// 🟢 2. ด่านตรวจสิทธิ์ระดับ Route (ห้ามคนพิมพ์ URL เข้าตรงๆ)
-const checkPermission = (req, res, next) => {
+// 🟢 อัปเกรด checkPermission ตัวเดิมของคุณกร ให้รองรับสิทธิ์ เพิ่ม/แก้/ลบ
+const checkPermission = async (req, res, next) => {
     const currentPath = req.path; // เช่น '/user_list'
 
-    // อนุญาตให้เข้าหน้า Dashboard ได้เสมอ (เพราะเป็นหน้าแรกหลัง Login)
+    // 1. อนุญาตให้เข้าหน้า Dashboard ได้เสมอ (ตามโค้ดเดิม)
     if (currentPath === '/dashboard') {
+        // ให้สิทธิ์เต็มที่สำหรับหน้า Dashboard เผื่อต้องใช้
+        res.locals.permission = { can_view: 1, can_add: 1, can_edit: 1, can_delete: 1 };
         return next();
     }
 
-    // เช็คว่า URL ที่กำลังจะเข้า มีอยู่ในรายชื่อที่อนุญาตหรือไม่?
-    if (res.locals.allowedUrls && res.locals.allowedUrls.includes(currentPath)) {
-        return next(); // มีสิทธิ์ -> ปล่อยผ่าน
-    }
+    try {
+        // ดึง Group ID ของคนที่ล็อกอินอยู่
+        const groupId = req.session.user ? req.session.user.group_id : null;
+        if (!groupId) {
+            return res.redirect('/');
+        }
 
-    // ไม่มีสิทธิ์ -> เด้งกลับไป Dashboard พร้อมแจ้งเตือน (หรือจะสร้างหน้า 403 ก็ได้ครับ)
-    console.log(`❌ บล็อกการเข้าถึง! ไม่มีสิทธิ์เข้า URL: ${currentPath}`);
-    res.send(`
-        <script>
-            alert('คุณไม่มีสิทธิ์เข้าถึงหน้านี้ครับ!');
-            window.location.href = '/myproject_nodejs/dashboard';
-        </script>
-    `);
+        // 2. Query ดึงสิทธิ์ เพิ่ม/แก้/ลบ ของหน้านี้ จากฐานข้อมูล
+        const sql = `
+            SELECT p.can_view, p.can_add, p.can_edit, p.can_delete 
+            FROM group_permissions p
+            JOIN menus m ON p.menu_id = m.id
+            WHERE p.group_id = ? AND m.link = ?
+        `;
+        const [perms] = await db.query(sql, [groupId, currentPath]);
+
+        // 3. ตรวจสอบว่ามีสิทธิ์เข้าดู (can_view = 1) หรือไม่?
+        if (perms.length > 0 && perms[0].can_view === 1) {
+            
+            // 🚀 มีสิทธิ์ผ่าน! -> ฝากตัวแปรสิทธิ์ทั้งหมดไปให้หน้า EJS ใช้โชว์/ซ่อนปุ่ม
+            res.locals.permission = perms[0]; 
+            return next(); 
+
+        } else {
+            // ⛔ ไม่มีสิทธิ์ (หรือไม่มีข้อมูลในตาราง) -> ใช้ท่าไม้ตายเดิมของคุณกร เตะกลับ Dashboard!
+            console.log(`❌ บล็อกการเข้าถึง! ไม่มีสิทธิ์เข้า URL: ${currentPath}`);
+            return res.send(`
+                <script>
+                    alert('คุณไม่มีสิทธิ์เข้าถึงหน้านี้ครับ!');
+                    window.location.href = '/myproject_nodejs/dashboard';
+                </script>
+            `);
+        }
+
+    } catch (error) {
+        console.error("Check Permission Error:", error);
+        return res.status(500).send("ระบบตรวจสอบสิทธิ์ขัดข้อง");
+    }
 };
 
 // 🟢 ส่งออก checkPermission ไปใช้ด้วย

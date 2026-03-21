@@ -7,6 +7,7 @@ const { requireAuth } = require('./middleware/authMiddleware');
 const { loadMenus, checkPermission } = require('./middleware/menuMiddleware');
 const userController = require('./controllers/userController');
 
+// const checkPermission = require('./middleware/checkPermission');
 // 🟢 เพิ่มส่วนนี้เข้าไป: เรียกใช้งาน Route Authentication
 
 
@@ -74,8 +75,22 @@ appRouter.get('/dashboard', requireAuth, loadMenus, (req, res) => {
     res.render('dashboard' , { title: 'หน้าหลัก - Myproject_ww' });
 });
 
+
 // 🟢 หน้าตั้งค่ากลุ่มผู้ใช้ (ดัก 3 ชั้น: ล็อกอินยัง? -> โหลดเมนูมาดูสิ -> มีสิทธิ์เข้าหน้านี้ไหม?)
+
 appRouter.get('/user_list', requireAuth, loadMenus, checkPermission, userController.showUserList);
+
+// ... โค้ด Route อื่นๆ ...
+// appRouter.get('/user_list', requireAuth, loadMenus, checkPermission, userController.showUserList);
+
+// 🟢 เพิ่มเส้นทางสำหรับรับข้อมูล POST จาก AJAX
+appRouter.post('/api/add_user', requireAuth, userController.addUser);
+
+// 🟢 เพิ่ม 2 เส้นทางนี้ สำหรับดึงข้อมูลและอัปเดตข้อมูล
+appRouter.get('/api/get_user/:id', requireAuth, userController.getUser);
+appRouter.post('/api/update_user', requireAuth, userController.updateUser);
+// 🟢 เพิ่มเส้นทางสำหรับรับคำสั่งลบข้อมูล
+appRouter.post('/api/delete_user', requireAuth, userController.deleteUser);
 
 app.use('/', appRouter);               // ประตูที่ 1: สำหรับ Nginx (9090) ที่โดนตัด URL ไปแล้ว
 app.use('/myproject_nodejs', appRouter); // ประตูที่ 2: สำหรับเข้าพอร์ต 7000 ตรงๆ

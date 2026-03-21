@@ -1,5 +1,4 @@
 <%- include('./layouts/header') %>
-
 <%- include('./layouts/sidebar') %>
 
 <div id="content-wrapper" class="d-flex flex-column">
@@ -9,58 +8,493 @@
 
         <div class="container-fluid">
 
-            <h1 class="h3 mb-4 text-gray-800">ตั้งค่ากลุ่มผู้ใช้</h1>
+            <h1 class="h3 mb-4 text-gray-800">จัดการผู้ใช้งานระบบ</h1>
             
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">รายชื่อกลุ่มผู้ใช้ในระบบ</h6>
-                    <button class="btn btn-sm btn-success shadow-sm" onclick="AppTools.showModal('เพิ่มกลุ่มผู้ใช้', 'กำลังพัฒนาฟอร์มเพิ่มข้อมูล...', 'info')">
-                        <i class="fas fa-plus fa-sm text-white-50"></i> เพิ่มกลุ่มใหม่
-                    </button>
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users"></i> รายชื่อผู้ใช้งานทั้งหมด</h6>
+                    <% if (permission && permission.can_add === 1) { %>
+						<button class="btn btn-sm btn-success shadow-sm" data-toggle="modal" data-target="#addUserModal">
+							<i class="fas fa-plus fa-sm text-white-50"></i> เพิ่มผู้ใช้งาน
+						</button>
+					<% } %>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover" id="userGroupTable" width="100%" cellspacing="0">
+                        <table class="table table-bordered table-hover" id="usersTable" width="100%" cellspacing="0" style="visibility: hidden;">
                             <thead class="thead-light">
                                 <tr>
-                                    <th width="15%" class="text-center">รหัสกลุ่ม (ID)</th>
-                                    <th>ชื่อกลุ่มการใช้งาน</th>
-                                    <th width="20%" class="text-center">จัดการ</th>
+                                    <th width="5%" class="text-center">ID</th>
+                                    <th>Username</th>
+                                    <th>ชื่อ-นามสกุล</th>
+                                    <th>กลุ่มสิทธิ์</th>
+                                    <th>สาขา</th>
+                                    <th>แผนก</th>
+                                    <th class="text-center">สถานะ</th>
+                                    <% if (permission && (permission.can_edit === 1 || permission.can_delete === 1)) { %>
+										<th width="15%" class="text-center">จัดการ</th>
+									<% } %>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td class="text-center">1</td>
-                                    <td>ผู้ดูแลระบบ (Admin)</td>
-                                    <td class="text-center">
-                                        <button class="btn btn-warning btn-sm" title="แก้ไข"><i class="fas fa-edit"></i></button>
-                                        <button class="btn btn-danger btn-sm" title="ลบ"><i class="fas fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="text-center">2</td>
-                                    <td>พนักงานทั่วไป (Staff)</td>
-                                    <td class="text-center">
-                                        <button class="btn btn-warning btn-sm" title="แก้ไข"><i class="fas fa-edit"></i></button>
-                                        <button class="btn btn-danger btn-sm" title="ลบ"><i class="fas fa-trash"></i></button>
-                                    </td>
-                                </tr>
+                                <% if (users && users.length > 0) { %>
+                                    <% users.forEach(function(user) { %>
+                                        <tr>
+                                            <td class="text-center"><%= user.id %></td>
+                                            <td><%= user.username %></td>
+                                            <td><%= user.fullname %></td>
+                                            <td><%= user.group_name || '-' %></td>
+                                            <td><%= user.branch_name || '-' %></td>
+                                            <td><%= user.dept_name || '-' %></td>
+                                            
+                                            <td class="text-center">
+                                                <% if (user.force_logout === 1) { %>
+                                                    <span class="badge badge-danger">ถูกระงับ</span>
+                                                <% } else { %>
+                                                    <span class="badge badge-success">ปกติ</span>
+                                                <% } %>
+                                            </td>
+											<% if (permission && (permission.can_edit === 1 || permission.can_delete === 1)) { %>
+												<td class="text-center">
+													<% if (permission.can_edit === 1) { %>
+														<button class="btn btn-warning btn-sm btn-edit" data-id="<%= user.id %>" title="แก้ไข"><i class="fas fa-edit"></i></button>
+													<% } %>
+													<% if (permission.can_delete === 1) { %>
+														<button class="btn btn-danger btn-sm btn-delete" data-id="<%= user.id %>" title="ลบ"><i class="fas fa-trash"></i></button>
+													<% } %>
+												</td>
+											<% } %>
+                                        </tr>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="8" class="text-center">ไม่พบข้อมูลผู้ใช้งาน</td>
+                                    </tr>
+                                <% } %>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
+
+        </div>
         </div>
     </div>
+	<div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog modal-lg" role="document">
+			<div class="modal-content">
+				<form id="formAddUser">
+					<div class="modal-header bg-success text-white">
+						<h5 class="modal-title"><i class="fas fa-user-plus"></i> เพิ่มผู้ใช้งานใหม่</h5>
+						<button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">×</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-md-6 form-group">
+								<label>Username (ชื่อเข้าสู่ระบบ) <span class="text-danger">*</span></label>
+								<input type="text" class="form-control" name="username" required>
+							</div>
+							<div class="col-md-6 form-group">
+								<label>Password (รหัสผ่าน) <span class="text-danger">*</span></label>
+								<input type="password" class="form-control" name="password" required>
+							</div>
+						</div>
+						<div class="form-group">
+							<label>ชื่อ-นามสกุล (Fullname) <span class="text-danger">*</span></label>
+							<input type="text" class="form-control" name="fullname" required>
+						</div>
+						
+						<hr>
+						<h6 class="font-weight-bold text-primary">การกำหนดสิทธิ์และสังกัด</h6>
+						<div class="row">
+							<div class="col-md-4 form-group">
+								<label>กลุ่มสิทธิ์</label>
+								<select class="form-control" name="group_id">
+									<option value="">-- ไม่ระบุ --</option>
+									<% groups.forEach(function(g) { %>
+										<option value="<%= g.id %>"><%= g.group_name %></option>
+									<% }); %>
+								</select>
+							</div>
+							<div class="col-md-4 form-group">
+								<label>สาขา</label>
+								<select class="form-control" name="branch_id">
+									<option value="">-- ไม่ระบุ --</option>
+									<% branches.forEach(function(b) { %>
+										<option value="<%= b.id %>"><%= b.branch_name %></option>
+									<% }); %>
+								</select>
+							</div>
+							<div class="col-md-4 form-group">
+								<label>แผนก</label>
+								<select class="form-control" name="dept_id">
+									<option value="">-- ไม่ระบุ --</option>
+									<% departments.forEach(function(d) { %>
+										<option value="<%= d.id %>"><%= d.dept_name %></option>
+									<% }); %>
+								</select>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-secondary" type="button" data-dismiss="modal">ยกเลิก</button>
+						<button type="submit" class="btn btn-success">บันทึกข้อมูล</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+    <div class="modal fade" id="editUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <form id="formEditUser">
+                    <input type="hidden" name="id" id="edit_id">
+                    
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title"><i class="fas fa-user-edit"></i> แก้ไขข้อมูลผู้ใช้งาน</h5>
+                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">×</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label>Username (ห้ามแก้ไข)</label>
+                                <input type="text" class="form-control bg-light" id="edit_username" readonly>
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Password ใหม่ <span class="text-muted text-sm">(ปล่อยว่างถ้าไม่ต้องการเปลี่ยน)</span></label>
+                                <input type="password" class="form-control" name="password" placeholder="*** กรอกเฉพาะตอนเปลี่ยนรหัส ***">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>ชื่อ-นามสกุล (Fullname) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="fullname" id="edit_fullname" required>
+                        </div>
+                        
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-3 form-group">
+                                <label>กลุ่มสิทธิ์</label>
+                                <select class="form-control" name="group_id" id="edit_group_id">
+                                    <option value="">-- ไม่ระบุ --</option>
+                                    <% groups.forEach(function(g) { %> <option value="<%= g.id %>"><%= g.group_name %></option> <% }); %>
+                                </select>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label>สาขา</label>
+                                <select class="form-control" name="branch_id" id="edit_branch_id">
+                                    <option value="">-- ไม่ระบุ --</option>
+                                    <% branches.forEach(function(b) { %> <option value="<%= b.id %>"><%= b.branch_name %></option> <% }); %>
+                                </select>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label>แผนก</label>
+                                <select class="form-control" name="dept_id" id="edit_dept_id">
+                                    <option value="">-- ไม่ระบุ --</option>
+                                    <% departments.forEach(function(d) { %> <option value="<%= d.id %>"><%= d.dept_name %></option> <% }); %>
+                                </select>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="text-danger">สถานะ</label>
+                                <select class="form-control border-danger" name="force_logout" id="edit_force_logout">
+                                    <option value="0">ใช้งานปกติ</option>
+                                    <option value="1">ระงับการใช้งาน</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" type="button" data-dismiss="modal">ยกเลิก</button>
+                        <button type="submit" class="btn btn-warning">อัปเดตข้อมูล</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 <%- include('./layouts/footer') %>
 
 <script>
-    // สั่งให้ตารางกลายเป็น DataTables ภาษาไทยทันที!
-    // (ใช้ setTimeout นิดนึงเพื่อรอให้ jQuery ใน footer โหลดเสร็จก่อนครับ)
-    document.addEventListener("DOMContentLoaded", function() {
-        setTimeout(function() {
-            AppTools.initDataTable('#userGroupTable');
-        }, 100);
+    // 🟢 1. จับ EJS ใส่ในเครื่องหมายคำพูด (VS Code จะมองเป็น String และเลิกฟ้อง Error)
+    const strEdit = '<%= (permission && permission.can_edit === 1) ? "true" : "false" %>';
+    const strDelete = '<%= (permission && permission.can_delete === 1) ? "true" : "false" %>';
+	
+	// const PERM_CAN_EDIT = <%= (permission && permission.can_edit === 1) ? 'true' : 'false' %>;
+    // const PERM_CAN_DELETE = <%= (permission && permission.can_delete === 1) ? 'true' : 'false' %>;
+	
+    // 🟢 2. แปลงข้อความ String ให้กลายเป็นตัวแปร Boolean (true/false) จริงๆ ของ JavaScript
+    const PERM_CAN_EDIT = (strEdit === 'true');
+    const PERM_CAN_DELETE = (strDelete === 'true');
+	
+	const HAS_ACTION_COLUMN = (PERM_CAN_EDIT || PERM_CAN_DELETE);
+    
+    $(document).ready(function() {
+        AppTools.initDataTable('#usersTable');
+
+        // 🟢 ดักจับการกดปุ่มบันทึกในฟอร์ม
+        $('#formAddUser').on('submit', function(e) {
+            e.preventDefault(); // เบรกไม่ให้หน้าเว็บรีเฟรช
+
+            let formData = $(this).serialize(); // รวบรวมข้อมูลทั้งหมดในฟอร์ม
+
+            $.ajax({
+                type: 'POST',
+                url: '/myproject_nodejs/api/add_user',
+                data: formData,
+                success: function(response) {
+                    if (response.status === 'success') {
+                        // ปิด Modal และล้างฟอร์ม
+                        $('#addUserModal').modal('hide');
+                        $('#formAddUser')[0].reset();
+                        
+                        // โชว์แจ้งเตือนสำเร็จ
+                        AppTools.showModal('สำเร็จ!', response.message, 'success');
+                        
+                        // ==========================================
+                        // 🚀 อัปเกรดใหม่: เอาข้อมูลมาต่อท้ายตารางแบบไม่ต้องรีเฟรช!
+                        // ==========================================
+                        let table = $('#usersTable').DataTable();
+                        let u = response.data; // ดึงข้อมูลที่ Node.js ส่งกลับมา
+                        
+                        // เตรียมป้ายสถานะ และปุ่มจัดการ (ให้หน้าตาเหมือน EJS เดิมเป๊ะๆ)
+                        let statusBadge = u.force_logout === 1 
+                            ? '<span class="badge badge-danger">ถูกระงับ</span>' 
+                            : '<span class="badge badge-success">ปกติ</span>';
+                            
+                        /*let actionBtns = `
+                            <button class="btn btn-warning btn-sm btn-edit" data-id="${u.id}" title="แก้ไข"><i class="fas fa-edit"></i></button>
+							<button class="btn btn-danger btn-sm btn-delete" data-id="${u.id}" title="ลบ"><i class="fas fa-trash"></i></button>
+						`;
+                        */
+                        // 🟢 2. ต่อจิ๊กซอว์ปุ่มตามสิทธิ์ (ถ้าไม่มีสิทธิ์ ตัวแปรนี้จะว่างเปล่า)
+                        let actionBtns = '';
+                        
+                        if (PERM_CAN_EDIT) {
+                            actionBtns += `<button class="btn btn-warning btn-sm btn-edit" data-id="${u.id}" title="แก้ไข"><i class="fas fa-edit"></i></button> `;
+                        }
+                        
+                        if (PERM_CAN_DELETE) {
+                            actionBtns += `<button class="btn btn-danger btn-sm btn-delete" data-id="${u.id}" title="ลบ"><i class="fas fa-trash"></i></button>`;
+                        }
+                        
+                        // ==========================================
+                        // 🚀 อัปเกรดแบบ Dynamic Column ป้องกัน DataTables พัง
+                        // ==========================================
+                        // 🟢 2. สร้างก้อนข้อมูล 7 คอลัมน์พื้นฐานไว้ก่อน
+                        let rowData = [
+                            u.id,
+                            u.username,
+                            u.fullname,
+                            u.group_name || '-',
+                            u.branch_name || '-',
+                            u.dept_name || '-',
+                            statusBadge
+                        ];
+
+                        // 🟢 3. ถ้าระบบมีคอลัมน์จัดการ ค่อยดันปุ่มเข้าไปเป็นคอลัมน์ที่ 8
+                        if (HAS_ACTION_COLUMN) {
+                            rowData.push(actionBtns);
+                        }
+
+                        // 🟢 4. สั่งวาดตารางโดยใช้ก้อน Array ที่เราประกอบเสร็จแล้ว
+                        let rowNode = table.row.add(rowData).draw(false).node(); 
+                        // ==========================================
+
+                        // 🟢 5. สั่งจัดตำแหน่ง (add Class)
+                        $(rowNode).find('td').eq(0).addClass('text-center'); // ID
+                        $(rowNode).find('td').eq(6).addClass('text-center'); // สถานะ
+                        
+                        // ถ้ามีคอลัมน์ที่ 8 (จัดการ) ค่อยจัดให้อยู่ตรงกลาง
+                        if (HAS_ACTION_COLUMN) {
+                            $(rowNode).find('td').eq(7).addClass('text-center'); 
+                        }
+
+                        // 🟢 สั่งจัดตำแหน่ง (add Class) ให้คอลัมน์ (td) ที่ต้องการ 
+                        // 💡 ทริคโปรแกรมเมอร์: คอลัมน์เริ่มนับจาก 0 นะครับ
+                        $(rowNode).find('td').eq(0).addClass('text-center'); // คอลัมน์ที่ 0 (ID) จัดกลาง
+                        $(rowNode).find('td').eq(6).addClass('text-center'); // คอลัมน์ที่ 6 (สถานะ) จัดกลาง
+                        $(rowNode).find('td').eq(7).addClass('text-center'); // คอลัมน์ที่ 7 (จัดการ) จัดกลาง
+
+                    } else {
+                        AppTools.showModal('ผิดพลาด', response.message, 'warning');
+                    }
+                }
+            });
+        });
+
+        // 🟢 สร้างตัวแปรจำว่าคลิกแก้ไขแถวไหน
+        let currentRow;
+
+        // 🟢 1. ดักจับตอนคลิกปุ่ม "แก้ไข"
+        $('#usersTable').on('click', '.btn-edit', function() {
+            currentRow = $(this).closest('tr'); // จำแถวที่โดนคลิกไว้
+            let userId = $(this).data('id');    // ดึง ID ออกมาจากปุ่ม
+
+            // ยิงไปขอข้อมูลคนนี้จาก Node.js
+            $.ajax({
+                url: '/myproject_nodejs/api/get_user/' + userId,
+                type: 'GET',
+                success: function(res) {
+                    if (res.status === 'success') {
+                        let u = res.data;
+                        // เอาข้อมูลมาหยอดใส่ช่องต่างๆ ใน Modal
+                        $('#edit_id').val(u.id);
+                        $('#edit_username').val(u.username);
+                        $('#edit_fullname').val(u.fullname);
+                        $('#edit_group_id').val(u.group_id);
+                        $('#edit_branch_id').val(u.branch_id);
+                        $('#edit_dept_id').val(u.dept_id);
+                        $('#edit_force_logout').val(u.force_logout);
+                        
+                        // เคลียร์ช่องรหัสผ่านให้ว่างเสมอ
+                        $('#formEditUser input[name="password"]').val(''); 
+                        
+                        // เปิด Modal ขึ้นมา
+                        $('#editUserModal').modal('show');
+                    } else {
+                        AppTools.showModal('ผิดพลาด', res.message, 'error');
+                    }
+                }
+            });
+        });
+
+        // 🟢 2. ดักจับตอนกดปุ่ม "อัปเดตข้อมูล"
+        $('#formEditUser').on('submit', function(e) {
+            e.preventDefault();
+            let formData = $(this).serialize();
+
+            $.ajax({
+                type: 'POST',
+                url: '/myproject_nodejs/api/update_user',
+                data: formData,
+                success: function(response) {
+                    if (response.status === 'success') {
+                        $('#editUserModal').modal('hide');
+                        AppTools.showModal('สำเร็จ!', response.message, 'success');
+
+                        // 🚀 อัปเดตตารางเฉพาะแถวที่กำลังแก้ โดยไม่ต้องรีเฟรช!
+                        let table = $('#usersTable').DataTable();
+                        let u = response.data;
+                        
+                        let statusBadge = u.force_logout === 1 
+                            ? '<span class="badge badge-danger">ถูกระงับ</span>' 
+                            : '<span class="badge badge-success">ปกติ</span>';
+                            
+                        /*
+                        let actionBtns = `
+							<button class="btn btn-warning btn-sm btn-edit" data-id="${u.id}" title="แก้ไข"><i class="fas fa-edit"></i></button>
+							<button class="btn btn-danger btn-sm btn-delete" data-id="${u.id}" title="ลบ"><i class="fas fa-trash"></i></button>
+						`;
+                        */
+                        let actionBtns = '';
+                        
+                        if (PERM_CAN_EDIT) {
+                            actionBtns += `<button class="btn btn-warning btn-sm btn-edit" data-id="${u.id}" title="แก้ไข"><i class="fas fa-edit"></i></button> `;
+                        }
+                        
+                        if (PERM_CAN_DELETE) {
+                            actionBtns += `<button class="btn btn-danger btn-sm btn-delete" data-id="${u.id}" title="ลบ"><i class="fas fa-trash"></i></button>`;
+                        }
+                        
+                        // ==========================================
+                        // 🚀 อัปเกรดแบบ Dynamic Column เพื่อความยืดหยุ่น
+                        // ==========================================
+                        // 🟢 2. สร้างก้อนข้อมูล 7 คอลัมน์พื้นฐาน
+                        let rowData = [
+                            u.id, 
+                            u.username, 
+                            u.fullname,
+                            u.group_name || '-', 
+                            u.branch_name || '-', 
+                            u.dept_name || '-',
+                            statusBadge
+                        ];
+
+                        // 🟢 3. ถ้ามีคอลัมน์จัดการ ให้ดันปุ่มเข้าไปต่อท้าย
+                        if (HAS_ACTION_COLUMN) {
+                            rowData.push(actionBtns);
+                        }
+
+                        // 🟢 4. ใช้ .data() ยัดก้อนข้อมูลใหม่ลงไปในแถวเดิม แล้ว .draw()
+                        table.row(currentRow).data(rowData).draw(false);
+
+                        // 🟢 5. จัด Class ให้กลับมาอยู่ตรงกลางเหมือนเดิม
+                        let rowNode = table.row(currentRow).node();
+                        $(rowNode).find('td').eq(0).addClass('text-center'); // ID
+                        $(rowNode).find('td').eq(6).addClass('text-center'); // สถานะ
+
+                        // ถ้ามีคอลัมน์ที่ 8 ค่อยจัดให้อยู่ตรงกลาง
+                        if (HAS_ACTION_COLUMN) {
+                            $(rowNode).find('td').eq(7).addClass('text-center'); 
+                        }
+                        // ==========================================
+						
+						
+                        $(rowNode).find('td').eq(0).addClass('text-center');
+                        $(rowNode).find('td').eq(6).addClass('text-center');
+                        $(rowNode).find('td').eq(7).addClass('text-center');
+
+                    } else {
+                        AppTools.showModal('ผิดพลาด', response.message, 'warning');
+                    }
+                }
+            });
+        });
+		
+		// ==========================================
+        // 🟢 4. ดักจับตอนคลิกปุ่ม "ลบ" (อัปเกรดใช้ SweetAlert2)
+        // ==========================================
+        $('#usersTable').on('click', '.btn-delete', function() {
+            let tr = $(this).closest('tr');
+            let userId = $(this).data('id');
+
+            // 🚀 เรียกใช้ SweetAlert2 แทน confirm() ของเดิม
+            Swal.fire({
+                title: 'ยืนยันการลบข้อมูล?',
+                text: "ลบแล้วจะไม่สามารถกู้คืนกลับมาได้นะครับ!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74a3b', // สีแดงสไตล์ Bootstrap Danger
+                cancelButtonColor: '#858796',  // สีเทาสไตล์ Secondary
+                confirmButtonText: '<i class="fas fa-trash"></i> ใช่, ลบเลย!',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                
+                // ถ้า User กดปุ่ม "ใช่, ลบเลย!" (isConfirmed จะเป็น true)
+                if (result.isConfirmed) {
+                    
+                    // ยิง AJAX ไปหลังบ้านตามปกติ
+                    $.ajax({
+                        type: 'POST',
+                        url: '/myproject_nodejs/api/delete_user',
+                        data: { id: userId },
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                
+                                // 🟢 เปลี่ยนจาก AppTools แจ้งเตือน มาใช้ Swal แจ้งเตือนความสำเร็จสวยๆ
+                                Swal.fire(
+                                    'ลบสำเร็จ!',
+                                    response.message,
+                                    'success'
+                                );
+                                
+                                // ลบแถวออกจากตาราง
+                                let table = $('#usersTable').DataTable();
+                                table.row(tr).remove().draw(false);
+                                
+                            } else {
+                                Swal.fire('ผิดพลาด', response.message, 'warning');
+                            }
+                        },
+                        error: function() {
+                            Swal.fire('ระบบขัดข้อง', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+                        }
+                    });
+                }
+            });
+        });
     });
 </script>
