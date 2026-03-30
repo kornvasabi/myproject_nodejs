@@ -45,3 +45,109 @@
     <script src="/myproject_nodejs/js/app-tools.js"></script>
 </body>
 </html>
+
+<script>
+    $(document).ready(function() {
+        // 🟢 1. กำหนดเวลาให้ตรงกับหลังบ้าน (สมมติหลังบ้านตั้งไว้ 30 นาที)
+        const SESSION_MINUTES = 30; 
+        
+        // 1. คำนวณเวลาหมดอายุ (1 นาที = 60,000 มิลลิวินาที)
+        const timeoutMs = SESSION_MINUTES * 60 * 1000; 
+        
+        // คำนวณเวลาแจ้งเตือนล่วงหน้า (สมมติให้เตือนก่อนหมดเวลา 1 นาที)
+        const warningMs = timeoutMs - (1 * 60 * 1000);
+        
+        console.log(`[Timer] เริ่มจับเวลา! จะเตือนในอีก ${warningMs/1000} วินาที และเตะออกใน ${timeoutMs/1000} วินาที`);
+
+        // 🟢 3. ตั้งนาฬิกาปลุก แจ้งเตือนล่วงหน้า (เด้งตอนวินาทีที่ 50)
+        let warningTimer = setTimeout(function() {
+            Swal.fire({
+                title: 'เซสชันกำลังจะหมดอายุ!',
+                text: 'คุณไม่ได้ทำรายการใดๆ เป็นเวลานาน ระบบจะทำการออกจากระบบเพื่อความปลอดภัยครับ',
+                icon: 'warning',
+                timer: 60000, // โหมดเทส: โชว์หลอดโหลดแค่ 10 วินาที
+                timerProgressBar: true,
+                showConfirmButton: true,
+                confirmButtonText: 'รับทราบ',
+                confirmButtonColor: '#f6c23e'
+            });
+        }, warningMs);
+
+        // 🟢 4. ตั้งนาฬิกาปลุก เตะออกจากระบบ (เด้งตอนวินาทีที่ 60)
+        let logoutTimer = setTimeout(function() {
+            // หมดเวลาปุ๊บ จับเตะไปหน้า Login ทันที
+            window.location.href = '/myproject_nodejs/'; 
+        }, timeoutMs);
+
+        // ==========================================
+        // 🚀 (Option เสริม) ฟังก์ชันรีเซ็ตเวลาเมื่อมีการขยับเมาส์
+        // ==========================================
+        function resetTimers() {
+            clearTimeout(warningTimer);
+            clearTimeout(logoutTimer);
+            
+            // ปิดแจ้งเตือน Swal (ถ้ามันเปิดอยู่)
+            if (Swal.isVisible()) {
+                Swal.close();
+            }
+            
+            // ตั้งเวลาใหม่
+            warningTimer = setTimeout(function() {
+                Swal.fire({
+                    title: 'เซสชันกำลังจะหมดอายุ!',
+                    text: 'คุณไม่ได้ทำรายการใดๆ เป็นเวลานาน ระบบจะทำการออกจากระบบเพื่อความปลอดภัยครับ',
+                    icon: 'warning',
+                    timer: 10000,
+                    timerProgressBar: true,
+                    confirmButtonText: 'รับทราบ',
+                    confirmButtonColor: '#f6c23e'
+                });
+            }, warningMs);
+
+            logoutTimer = setTimeout(function() { 
+                window.location.href = '/myproject_nodejs/'; 
+            }, timeoutMs);
+        }
+
+        // 💡 ถ้าอยากเทสโหมด "ขยับเมาส์แล้วเวลานับใหม่" ให้เอา // บรรทัดล่างนี้ออกครับ
+        // $(document).on('mousemove keypress', resetTimers); 
+    });
+	
+	
+	$(document).ready(function() {
+		// 🟢 ดักจับเวลามีคนกดปุ่มเปลี่ยนภาษา
+		$('.btn-change-lang').on('click', function(e) {
+			e.preventDefault(); // 🛑 เบรก! อย่าเพิ่งเปลี่ยนหน้า
+			
+			let targetUrl = $(this).attr('href'); // ดึง URL (เช่น /change-lang/en)
+			let langText = $(this).text().trim(); // ดึงข้อความบนปุ่ม (เช่น 🇬🇧 English)
+
+			Swal.fire({
+				title: 'กำลังสลับภาษา',
+				text: `ระบบกำลังเปลี่ยนเป็น ${langText} กรุณารอสักครู่...`,
+				icon: 'info',
+				showConfirmButton: false, 
+				allowOutsideClick: false,
+				didOpen: () => {
+					Swal.showLoading(); // เปิดแอนิเมชันหมุนๆ
+					
+					// 🚀 พระเอกอยู่ตรงนี้: ใช้ AJAX ยิงไปหลังบ้านแบบเงียบๆ
+					$.get(targetUrl, function(response) {
+						
+						if(response.status === 'success') {
+							// พอหลังบ้านเซฟ Session เสร็จ ก็หน่วงเวลาให้ดูสมูทนิดนึง
+							setTimeout(() => {
+								// 🔄 สั่งรีเฟรชหน้าปัจจุบัน (Require หน้าเดิม 1 ครั้ง)
+								window.location.reload(); 
+							}, 800); 
+						}
+						
+					}).fail(function() {
+						Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเปลี่ยนภาษาได้', 'error');
+					});
+				}
+			});
+		});
+	});
+	
+</script>

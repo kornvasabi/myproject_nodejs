@@ -15,7 +15,7 @@
                     <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users"></i> รายชื่อผู้ใช้งานทั้งหมด</h6>
                     <% if (permission && permission.can_add === 1) { %>
 						<button class="btn btn-sm btn-success shadow-sm" data-toggle="modal" data-target="#addUserModal">
-							<i class="fas fa-plus fa-sm text-white-50"></i> เพิ่มผู้ใช้งาน
+							<i class="fas fa-plus fa-sm text-white-50"></i> <%= __('action.add') %>
 						</button>
 					<% } %>
                 </div>
@@ -85,7 +85,7 @@
 			<div class="modal-content">
 				<form id="formAddUser">
 					<div class="modal-header bg-success text-white">
-						<h5 class="modal-title"><i class="fas fa-user-plus"></i> เพิ่มผู้ใช้งานใหม่</h5>
+						<h5 class="modal-title"><i class="fas fa-user-plus"></i> <%= __('action.add') %></h5>
 						<button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
 							<span aria-hidden="true">×</span>
 						</button>
@@ -93,44 +93,44 @@
 					<div class="modal-body">
 						<div class="row">
 							<div class="col-md-6 form-group">
-								<label>Username (ชื่อเข้าสู่ระบบ) <span class="text-danger">*</span></label>
+								<label><%= __('form.username') %> <span class="text-danger">*</span></label>
 								<input type="text" class="form-control" name="username" required>
 							</div>
 							<div class="col-md-6 form-group">
-								<label>Password (รหัสผ่าน) <span class="text-danger">*</span></label>
+								<label><%= __('form.password') %> <span class="text-danger">*</span></label>
 								<input type="password" class="form-control" name="password" required>
 							</div>
 						</div>
 						<div class="form-group">
-							<label>ชื่อ-นามสกุล (Fullname) <span class="text-danger">*</span></label>
+							<label><%= __('form.fullname') %> <span class="text-danger">*</span></label>
 							<input type="text" class="form-control" name="fullname" required>
 						</div>
 						
 						<hr>
-						<h6 class="font-weight-bold text-primary">การกำหนดสิทธิ์และสังกัด</h6>
+						<h6 class="font-weight-bold text-primary"><%= __('form.permissions') %></h6>
 						<div class="row">
 							<div class="col-md-4 form-group">
-								<label>กลุ่มสิทธิ์</label>
+								<label><%= __('form.usergroup') %></label>
 								<select class="form-control" name="group_id">
-									<option value="">-- ไม่ระบุ --</option>
+									<option value=""><%= __('form.selectno') %></option>
 									<% groups.forEach(function(g) { %>
 										<option value="<%= g.id %>"><%= g.group_name %></option>
 									<% }); %>
 								</select>
 							</div>
 							<div class="col-md-4 form-group">
-								<label>สาขา</label>
+								<label><%= __('form.locats') %></label>
 								<select class="form-control" name="branch_id">
-									<option value="">-- ไม่ระบุ --</option>
+									<option value=""><%= __('form.selectno') %></option>
 									<% branches.forEach(function(b) { %>
 										<option value="<%= b.id %>"><%= b.branch_name %></option>
 									<% }); %>
 								</select>
 							</div>
 							<div class="col-md-4 form-group">
-								<label>แผนก</label>
+								<label><%= __('form.department') %></label>
 								<select class="form-control" name="dept_id">
-									<option value="">-- ไม่ระบุ --</option>
+									<option value=""><%= __('form.selectno') %></option>
 									<% departments.forEach(function(d) { %>
 										<option value="<%= d.id %>"><%= d.dept_name %></option>
 									<% }); %>
@@ -139,8 +139,8 @@
 						</div>
 					</div>
 					<div class="modal-footer">
-						<button class="btn btn-secondary" type="button" data-dismiss="modal">ยกเลิก</button>
-						<button type="submit" class="btn btn-success">บันทึกข้อมูล</button>
+						<button class="btn btn-secondary" type="button" data-dismiss="modal"><%= __('action.cancel') %></button>
+						<button type="submit" class="btn btn-success"><%= __('action.save') %></button>
 					</div>
 				</form>
 			</div>
@@ -154,7 +154,7 @@
                     <input type="hidden" name="id" id="edit_id">
                     
                     <div class="modal-header bg-warning text-dark">
-                        <h5 class="modal-title"><i class="fas fa-user-edit"></i> แก้ไขข้อมูลผู้ใช้งาน</h5>
+                        <h5 class="modal-title"><i class="fas fa-user-edit"></i> <%= __('action.edit') %></h5>
                         <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">×</span>
                         </button>
@@ -208,8 +208,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-secondary" type="button" data-dismiss="modal">ยกเลิก</button>
-                        <button type="submit" class="btn btn-warning">อัปเดตข้อมูล</button>
+                        <button class="btn btn-secondary" type="button" data-dismiss="modal"><%= __('action.cancel') %></button>
+                        <button type="submit" class="btn btn-warning"><%= __('action.edit') %></button>
                     </div>
                 </form>
             </div>

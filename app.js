@@ -6,6 +6,9 @@ const app = express();
 const { requireAuth } = require('./middleware/authMiddleware');
 const { loadMenus, checkPermission } = require('./middleware/menuMiddleware');
 const userController = require('./controllers/userController');
+const reportController = require('./controllers/reportController');
+const multer = require('multer');
+const importController = require('./controllers/importController');
 
 // const checkPermission = require('./middleware/checkPermission');
 // 🟢 เพิ่มส่วนนี้เข้าไป: เรียกใช้งาน Route Authentication
@@ -36,7 +39,9 @@ app.use(session({
     secret: 'my_secret_key_1234',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 } // 24 ชั่วโมง
+    cookie: { 
+        maxAge:1000 * 60 * 30  // ตัวอย่างนี้คือตั้งไว้ 30 นาทีครับ
+    }
 }));
 
 app.use((req, res, next) => {
@@ -54,7 +59,68 @@ app.use((req, res, next) => {
     next(); // สำคัญมาก! ต้องมี next() เพื่อให้โค้ดทำงานต่อ
 });
 
+app.use((req, res, next) => {
+    res.locals.session = req.session; 
+    next();
+});
+
+const i18n = require('i18n');
+// const path = require('path');
+
+// 🟢 1. ตั้งค่า i18n
+i18n.configure({
+    locales: ['th', 'en'], // ภาษาที่รองรับ
+    directory: path.join(__dirname, 'locales'), // ชี้ไปที่โฟลเดอร์ที่เราสร้างไว้
+    defaultLocale: 'th', // ภาษาเริ่มต้น
+    objectNotation: true, // 💡 เปิดโหมดนี้เพื่อให้เรียกใช้แบบ menu.dashboard ได้
+    autoReload: true // ถ้าเราแอบแก้ไฟล์ json มันจะอัปเดตเว็บให้ทันที!
+});
+
+// 🟢 2. ให้ Express รู้จัก i18n
+app.use(i18n.init);
+
+// 🟢 3. ดักจับ Session เพื่อให้ระบบจำได้ว่า User คนนี้เลือกภาษาอะไรไว้
+app.use((req, res, next) => {
+    // 1. ดึงภาษาจาก Session (ถ้าไม่มีให้ใช้ 'th' เป็นค่าเริ่มต้น)
+    const currentLang = (req.session && req.session.lang) ? req.session.lang : 'th';
+    
+    // 2. สั่งเปลี่ยนภาษาให้กระเป๋า res (เพื่อให้ EJS ทุกหน้าเอาไปใช้)
+    res.setLocale(currentLang); 
+    
+    // 3. ฝากตัวแปรให้ EJS ใช้ตรวจสอบว่าตอนนี้ภาษาอะไร (เช่น เอาไปทำปุ่ม Active)
+    res.locals.currentLang = currentLang; 
+
+    // (เปิด Console.log ดูได้ครับ ถ้าไม่ใช้แล้วค่อยลบทิ้ง)
+    // console.log(`[DEBUG] เรนเดอร์หน้าเว็บด้วยภาษา: ${res.getLocale()}`);
+    
+    next();
+});
+
 const appRouter = express.Router();
+
+// ==========================================
+// 🟢 API สำหรับกดสลับภาษา (เปลี่ยนภาษาเสร็จแล้วรีเฟรชหน้าเดิม)
+// ==========================================
+appRouter.get('/change-lang/:lang', (req, res) => {
+    const lang = req.params.lang;
+    
+    // 1. เช็คว่าภาษาที่ส่งมา มีในระบบไหม
+    if (['th', 'en'].includes(lang)) {
+        // 2. บันทึกภาษาลง Session
+        req.session.lang = lang; 
+        
+        // 3. บังคับเซฟ Session ให้เสร็จชัวร์ๆ ก่อนสั่งรีเฟรชหน้าเว็บ
+        req.session.save((err) => {
+            if (err) console.error("Session Save Error:", err);
+            // res.redirect('back'); // วาร์ปกลับไปหน้าล่าสุดที่ User เปิดอยู่
+			res.json({ status: 'success' });
+        });
+    } else {
+        // ถ้าส่งภาษาแปลกๆ มา ก็แค่รีเฟรชกลับหน้าเดิม
+        res.redirect('back');
+    }
+});
+// ==========================================
 
 const authRoutes = require('./routes/authRoutes');
 appRouter.use('/auth', authRoutes);
@@ -92,8 +158,69 @@ appRouter.post('/api/update_user', requireAuth, userController.updateUser);
 // 🟢 เพิ่มเส้นทางสำหรับรับคำสั่งลบข้อมูล
 appRouter.post('/api/delete_user', requireAuth, userController.deleteUser);
 
+// 1. Route เปิดหน้าจอเลือกวันที่ (ต้องมีสิทธิ์ถึงจะเข้าได้)
+appRouter.get('/report_issues', requireAuth, loadMenus, checkPermission, reportController.showReportPage);
+
+// 2. Route รับคำสั่งโหลด Excel (ไม่ต้องเช็ค loadMenus ก็ได้ เพราะมันไม่ได้โชว์หน้าเว็บ)
+appRouter.get('/export/issues/excel', requireAuth, reportController.exportIssueExcel);
+
+appRouter.get('/export/issues/pdf', requireAuth, reportController.exportIssuePdf);
+
+// 🟢 ตั้งค่า Multer ให้รับไฟล์มาเก็บไว้ใน RAM ชั่วคราว (ไม่ต้องสร้างไฟล์ขยะในเครื่อง)
+const upload = multer({ storage: multer.memoryStorage() });
+
+// 🟢 แก้เป็นแบบนี้ครับ (เพิ่ม loadMenus และ checkPermission)
+/*appRouter.get('/price_import', requireAuth, loadMenus, checkPermission, (req, res) => {
+    res.render('price_import', { title: 'นำเข้าข้อมูลราคา' });
+});*/
+
+appRouter.get('/price_import', requireAuth, loadMenus, checkPermission, (req, res) => {
+    res.render('price_import', { title: 'นำเข้าข้อมูลราคา' });
+});
+
+// 🟢 API รับไฟล์ Excel (ต้องใช้ upload.single() เพื่อดักจับไฟล์ชื่อ 'price_file')
+appRouter.post('/api/import/excel', requireAuth, upload.single('price_file'), importController.importPriceExcel);
+
 app.use('/', appRouter);               // ประตูที่ 1: สำหรับ Nginx (9090) ที่โดนตัด URL ไปแล้ว
 app.use('/myproject_nodejs', appRouter); // ประตูที่ 2: สำหรับเข้าพอร์ต 7000 ตรงๆ
+
+// =========================================================================
+// 🟢 Middleware ดักจับ 404 Not Found (หน้าเว็บที่ยังไม่ได้สร้าง หรือพิมพ์ URL ผิด)
+// ⚠️ กฎเหล็ก: ต้องวางไว้ล่างสุดของ Route ทั้งหมดเสมอ! 
+// =========================================================================
+app.use((req, res, next) => {
+    // ส่งหน้า HTML พร้อม SweetAlert2 แจ้งเตือนว่า "กำลังพัฒนา"
+    res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="th">
+        <head>
+            <meta charset="utf-8">
+            <title>Under Development</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <style>
+                body { background-color: #f8f9fc; font-family: 'Kanit', sans-serif; }
+            </style>
+        </head>
+        <body>
+            <script>
+                Swal.fire({
+                    title: 'กำลังพัฒนา 🚧',
+                    text: 'ฟังก์ชันนี้กำลังอยู่ระหว่างการพัฒนาครับ อดใจรออีกนิดนะครับ!',
+                    icon: 'info',
+                    confirmButtonText: 'กลับสู่หน้าหลัก',
+                    confirmButtonColor: '#f6c23e', // สีเหลืองสไตล์ Warning/Construction
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '/myproject_nodejs/dashboard';
+                    }
+                });
+            </script>
+        </body>
+        </html>
+    `);
+});
 
 // 6. รันที่พอร์ต 7000 ตามที่คุณกรต้องการ
 const PORT = 7000;
