@@ -9,6 +9,35 @@
                     
                     <ul class="navbar-nav ml-auto">
                         <div class="topbar-divider d-none d-sm-block"></div>
+						<li class="nav-item dropdown no-arrow mx-1">
+							<a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button"
+								data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+								
+								<% if (currentLang === 'en') { %>
+									<span class="mr-2 d-none d-lg-inline text-gray-600 small">🇬🇧 English</span>
+								<% } else { %>
+									<span class="mr-2 d-none d-lg-inline text-gray-600 small">🇹🇭 ไทย</span>
+								<% } %>
+								
+								<i class="fas fa-globe fa-fw"></i>
+							</a>
+							
+							<div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+								aria-labelledby="languageDropdown">
+								
+								<a class="dropdown-item btn-change-lang <%= currentLang === 'th' ? 'active' : '' %>" 
+								   href="/myproject_nodejs/change-lang/th">
+									🇹🇭 ภาษาไทย
+								</a>
+								
+								<a class="dropdown-item btn-change-lang <%= currentLang === 'en' ? 'active' : '' %>" 
+								   href="/myproject_nodejs/change-lang/en">
+									🇬🇧 English
+								</a>
+								
+							</div>
+						</li>
+						<div class="topbar-divider d-none d-sm-block"></div>
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
                                 <span class="mr-2 d-none d-lg-inline text-gray-600 small">คุณกร (Admin)</span>
@@ -22,4 +51,5 @@
                             </div>
                         </li>
                     </ul>
+					
                 </nav>

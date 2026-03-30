@@ -43,10 +43,10 @@
 		"required_field": "Please fill out this field",
 		"permissions": "Permissions",
 		"fullname": "Fullname",
-		"usergroup": "Group",
-		"locats": "Location",
-		"department": "Department",
-		"selectno": "No Choice"
+		"usergroup" : "Group",
+		"locats" : "Location",
+		"department" : "Department",
+		"selectno" : "No Choice"
 	},
 	"status": {
 		"active": "Active",

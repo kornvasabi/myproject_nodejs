@@ -1,0 +1,76 @@
+<%- include('layouts/header') %>
+<%- include('layouts/sidebar') %>
+<%- include('layouts/topbar') %>
+
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">นำเข้าข้อมูลราคา (Excel)</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">อัปโหลดไฟล์ Excel (.xlsx)</h6>
+        </div>
+        <div class="card-body">
+            
+            <form id="importForm" enctype="multipart/form-data">
+				<div class="form-group">
+					<label>เลือกไฟล์นำเข้า (โครงสร้าง: รหัสสินค้า | ราคา | วันที่เริ่ม)</label>
+					<input type="file" name="price_file" class="form-control-file" accept=".xlsx, .csv" required>
+				</div>
+				<button type="submit" class="btn btn-primary mt-3">
+					<i class="fas fa-upload"></i> เริ่มนำเข้าข้อมูล
+				</button>
+			</form>
+
+        </div>
+    </div>
+</div>
+
+<%- include('layouts/footer') %>
+<script>
+    $(document).ready(function() {
+
+        $('#importForm').on('submit', async function(e) {
+            e.preventDefault(); // 🛑 เบรกไม่ให้หน้าเว็บกระพริบ/รีเฟรช
+
+            // 📦 ใช้ FormData เพื่อห่อไฟล์และข้อมูลทั้งหมดในฟอร์มเตรียมส่ง
+            const formData = new FormData(this);
+
+            // 🚀 1. โชว์ป๊อปอัพโหลดหมุนติ้วๆ
+            Swal.fire({
+                title: 'กำลังนำเข้าข้อมูล...',
+                text: 'กรุณารอสักครู่ ระบบกำลังอ่านและบันทึกไฟล์ Excel',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                // 🚀 2. ยิงไฟล์ไปให้หลังบ้าน (Node.js) ผ่าน fetch API
+                const response = await fetch('/myproject_nodejs/api/import/excel', {
+                    method: 'POST',
+                    body: formData // โยนกล่อง FormData ไปเลย
+                });
+
+                // แปลงผลลัพธ์ที่ตอบกลับมาให้เป็นออบเจ็กต์ JSON
+                const result = await response.json();
+
+                // 🚀 3. เช็คสถานะแล้วแสดงผล SweetAlert
+                if (result.status === 'success') {
+                    // ถ้าสำเร็จ โชว์ป๊อปอัพสีเขียว แล้วรีเฟรชหน้าเคลียร์ฟอร์ม
+                    Swal.fire('สำเร็จ!', result.message, 'success').then(() => {
+                        window.location.reload(); 
+                    });
+                } else {
+                    // ถ้าพัง (ข้อมูลซ้ำ, วันที่ผิด) โชว์ป๊อปอัพสีแดง
+                    Swal.fire('ข้อผิดพลาด', result.message, 'error');
+                }
+
+            } catch (error) {
+                console.error("Upload Error:", error);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+            }
+        });
+
+    });
+</script>

@@ -44,22 +44,26 @@ const loadMenus = async (req, res, next) => {
 
 // 🟢 อัปเกรด checkPermission ตัวเดิมของคุณกร ให้รองรับสิทธิ์ เพิ่ม/แก้/ลบ
 const checkPermission = async (req, res, next) => {
-    const currentPath = req.path; // เช่น '/user_list'
+    const currentPath = req.path.substring(1); // เช่น '/user_list'
 
     // 1. อนุญาตให้เข้าหน้า Dashboard ได้เสมอ (ตามโค้ดเดิม)
-    if (currentPath === '/dashboard') {
+    /*if (currentPath === '/dashboard') {
         // ให้สิทธิ์เต็มที่สำหรับหน้า Dashboard เผื่อต้องใช้
         res.locals.permission = { can_view: 1, can_add: 1, can_edit: 1, can_delete: 1 };
         return next();
+    }*/
+	if (currentPath === 'dashboard' || currentPath === 'myproject_nodejs/dashboard') {
+        res.locals.permission = { can_view: 1, can_add: 1, can_edit: 1, can_delete: 1 };
+        return next();
     }
-
+	
     try {
         // ดึง Group ID ของคนที่ล็อกอินอยู่
         const groupId = req.session.user ? req.session.user.group_id : null;
         if (!groupId) {
             return res.redirect('/');
         }
-
+		
         // 2. Query ดึงสิทธิ์ เพิ่ม/แก้/ลบ ของหน้านี้ จากฐานข้อมูล
         const sql = `
             SELECT p.can_view, p.can_add, p.can_edit, p.can_delete 
@@ -68,7 +72,7 @@ const checkPermission = async (req, res, next) => {
             WHERE p.group_id = ? AND m.link = ?
         `;
         const [perms] = await db.query(sql, [groupId, currentPath]);
-
+		
         // 3. ตรวจสอบว่ามีสิทธิ์เข้าดู (can_view = 1) หรือไม่?
         if (perms.length > 0 && perms[0].can_view === 1) {
             
@@ -77,13 +81,39 @@ const checkPermission = async (req, res, next) => {
             return next(); 
 
         } else {
-            // ⛔ ไม่มีสิทธิ์ (หรือไม่มีข้อมูลในตาราง) -> ใช้ท่าไม้ตายเดิมของคุณกร เตะกลับ Dashboard!
+            // ⛔ ไม่มีสิทธิ์ -> เตะกลับ Dashboard พร้อมโชว์ SweetAlert2 แบบหล่อๆ
             console.log(`❌ บล็อกการเข้าถึง! ไม่มีสิทธิ์เข้า URL: ${currentPath}`);
             return res.send(`
-                <script>
-                    alert('คุณไม่มีสิทธิ์เข้าถึงหน้านี้ครับ!');
-                    window.location.href = '/myproject_nodejs/dashboard';
-                </script>
+                <!DOCTYPE html>
+                <html lang="th">
+                <head>
+                    <meta charset="utf-8">
+                    <title>Access Denied</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+                    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                    <style>
+                        body { background-color: #f8f9fc; font-family: 'Kanit', sans-serif; }
+                    </style>
+                </head>
+                <body>
+                    <script>
+                        // 🚀 เรียกใช้ SweetAlert2
+                        Swal.fire({
+                            title: 'ปฏิเสธการเข้าถึง!',
+                            text: 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้ครับ กรุณาติดต่อผู้ดูแลระบบ',
+                            icon: 'error',
+                            confirmButtonText: 'กลับสู่หน้าหลัก',
+                            confirmButtonColor: '#e74a3b', // สีแดงสไตล์ตระกูล Danger
+                            allowOutsideClick: false // บังคับให้ต้องกดปุ่มเท่านั้น
+                        }).then((result) => {
+                            // 🟢 พอกดปุ่ม "กลับสู่หน้าหลัก" ปุ๊บ ค่อยสั่งเปลี่ยนหน้าต่าง (Redirect)
+                            if (result.isConfirmed) {
+                                window.location.href = '/myproject_nodejs/dashboard';
+                            }
+                        });
+                    </script>
+                </body>
+                </html>
             `);
         }
 

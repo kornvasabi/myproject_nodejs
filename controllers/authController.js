@@ -9,7 +9,17 @@ const login = async (req, res) => {
     try {
         // 2. ค้นหา Username ในฐานข้อมูล MariaDB 
         // (ตรวจสอบชื่อตาราง users ให้ตรงกับระบบจริงของคุณกรนะครับ)
-        const sql = "SELECT * FROM users WHERE username = ?";
+        // const sql = "SELECT * FROM users WHERE username = ?";
+
+        const sql = `
+            SELECT 
+                u.id ,u.username ,u.password,u.fullname ,u.group_id ,ug.group_name ,d.dept_name
+            FROM users u
+            LEFT JOIN user_groups ug ON ug.id = u.group_id
+            LEFT JOIN departments d ON d.id = u.dept_id
+            WHERE u.username = ?
+        `;
+
         const [rows] = await db.query(sql, [username]);
 
         if (rows.length > 0) {
@@ -27,7 +37,10 @@ const login = async (req, res) => {
                 req.session.user = { 
                     id: user.id, 
                     username: user.username,
-					group_id: user.group_id
+					group_id: user.group_id,
+                    fullname: user.fullname,
+                    group_name: user.group_name,
+                    dept_name: user.dept_name
                 };
 
                 // สั่ง Redirect ไปหน้า Dashboard 

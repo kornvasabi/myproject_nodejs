@@ -13,8 +13,13 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
     "ejs": "^5.0.1",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "mysql2": "^3.19.1"
+    "i18n": "^0.15.3",
+    "moment": "^2.30.1",
+    "multer": "^2.1.1",
+    "mysql2": "^3.19.1",
+    "puppeteer": "^24.40.0"
   }
 }
