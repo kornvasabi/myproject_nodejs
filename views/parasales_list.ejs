@@ -579,6 +579,8 @@
                         // ==========================================
 						// 💻 อัปเดต 1: ยัดลงตาราง (มุมมองคอมพิวเตอร์)
 						// ==========================================
+						
+						/*
 						if ($.fn.DataTable.isDataTable('#dataTableDesktop')) {
 							let table = $('#dataTableDesktop').DataTable();
 							let newRow = table.row.add([
@@ -597,6 +599,38 @@
 							$(newRow).css('background-color', '#d1ecf1');
 							setTimeout(() => $(newRow).css('background-color', ''), 2000);
 						}
+						*/
+						// ==========================================
+						// 💻 อัปเดต 1: ยัดลงตาราง (มุมมองคอมพิวเตอร์) แบบชัวร์ 100%
+						// ==========================================
+						
+						// 1. ปั้น HTML สำหรับแถวใหม่ (Row)
+						let newRowHtml = `
+							<tr class="view-detail-trigger" data-id="${response.data.id}" style="cursor: pointer; display: none;">
+								<td class="text-center">${response.data.receipt_no}</td>
+								<td class="text-center">${response.data.formatted_date}</td>
+								<td>${response.data.customer_name}</td>
+								<td class="text-right">${parseFloat(response.data.net_weight).toFixed(2)} กก.</td>
+								<td class="text-right text-info">${parseFloat(response.data.drc_percent).toFixed(2)}%</td>
+								<td class="text-right font-weight-bold text-success">${parseFloat(response.data.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</td>
+								<td class="text-center">${statusBadge}</td>
+							</tr>
+						`;
+
+						// 2. ถ้ามีบรรทัด "ยังไม่มีข้อมูล" ค้างอยู่ ให้เตะทิ้งไปก่อน
+						$('#dataTableDesktop tbody tr td:contains("ยังไม่มีข้อมูล")').parent().remove();
+
+						// 3. แทรกแถวใหม่เข้าไป "บนสุด" ของตาราง (prepend)
+						$('#dataTableDesktop tbody').prepend(newRowHtml);
+						
+						// 4. ใส่เอฟเฟกต์ให้ค่อยๆ โผล่ขึ้นมา (fadeIn) พร้อมไฮไลท์สีฟ้า
+						let insertedRow = $('#dataTableDesktop tbody tr:first');
+						insertedRow.fadeIn(600).css('background-color', '#d1ecf1');
+						
+						// 5. ล้างสีฟ้าออกเมื่อผ่านไป 2 วินาที
+						setTimeout(() => {
+							insertedRow.css('background-color', '');
+						}, 2000);
 
                         // อัปเดต Card Mobile
 						let newCardHtml = `
