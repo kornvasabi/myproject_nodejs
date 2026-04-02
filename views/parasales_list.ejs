@@ -1,0 +1,696 @@
+<%- include('layouts/header') %>
+<%- include('layouts/sidebar') %>
+<%- include('layouts/topbar') %>
+
+<div class="container-fluid">
+
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">รายการรับซื้อน้ำยางหน้าร้าน</h1>
+        <button class="btn btn-primary shadow-sm" data-toggle="modal" data-target="#wizardModal">
+            <i class="fas fa-plus fa-sm text-white-50"></i> สร้างบิลรับซื้อใหม่
+        </button>
+    </div>
+
+    <div class="d-none d-lg-block">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-table"></i> ประวัติการรับซื้อวันนี้ (มุมมองตาราง)</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="dataTableDesktop" width="100%" cellspacing="0">
+                        <thead class="thead-light text-center">
+                            <tr>
+                                <th>เลขที่บิล</th><th>วัน/เวลา</th><th>ชื่อลูกค้า</th>
+                                <th>น้ำหนักสุทธิ</th><th>DRC</th><th>ยอดเงิน</th><th>สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if(transactions.length > 0) { %>
+                                <% transactions.forEach(function(tx) { %>
+                                    <tr class="view-detail-trigger" data-id="<%= tx.id %>" style="cursor: pointer;" title="คลิกเพื่อดูรายละเอียด">
+                                        <td class="text-center"><%= tx.receipt_no %></td>
+                                        <td class="text-center"><%= tx.formatted_date %></td>
+                                        <td><%= tx.customer_name %></td>
+                                        <td class="text-right"><%= parseFloat(tx.net_weight).toFixed(2) %> กก.</td>
+                                        <td class="text-right text-info"><%= parseFloat(tx.drc_percent).toFixed(2) %>%</td>
+                                        <td class="text-right font-weight-bold text-success"><%= parseFloat(tx.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2}) %> ฿</td>
+                                        <td class="text-center">
+                                            <% if(tx.payment_status === 'paid') { %>
+                                                <span class="badge badge-success">จ่ายแล้ว</span>
+                                            <% } else { %>
+                                                <span class="badge badge-warning text-dark">ค้างจ่าย</span>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr><td colspan="7" class="text-center text-muted">ยังไม่มีข้อมูลการรับซื้อ</td></tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-block d-lg-none">
+        <h6 class="font-weight-bold text-primary mb-3"><i class="fas fa-th-large"></i> ประวัติการรับซื้อวันนี้</h6>
+        <div class="row" id="transactionListMobile">
+            <% if(transactions.length > 0) { %>
+                <% transactions.forEach(function(tx) { %>
+                    <div class="col-12 col-md-6 mb-3 transaction-item">
+                        <div class="card <%= tx.payment_status === 'paid' ? 'border-left-success' : 'border-left-warning' %> shadow h-100 py-2 view-detail-trigger" data-id="<%= tx.id %>" style="cursor: pointer;">
+                            <div class="card-body py-2">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-primary mb-1">
+                                            <i class="fas fa-receipt"></i> <%= tx.receipt_no %> 
+                                            <span class="float-right text-muted"><%= tx.formatted_date.split(' ')[1] %> น.</span>
+                                        </div>
+                                        <div class="h6 mb-1 font-weight-bold text-gray-800"><%= tx.customer_name %></div>
+                                        <div class="text-sm mb-1 text-gray-600">
+                                            นน: <b><%= parseFloat(tx.net_weight).toFixed(2) %></b> | 
+                                            DRC: <b class="text-info"><%= parseFloat(tx.drc_percent).toFixed(2) %>%</b>
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold text-success">
+                                            <%= parseFloat(tx.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2}) %> ฿
+                                        </div>
+                                    </div>
+                                    <div class="col-auto text-center pl-2">
+                                        <% if(tx.payment_status === 'paid') { %>
+                                            <span class="badge badge-success"><i class="fas fa-check"></i> จ่ายแล้ว</span>
+                                        <% } else { %>
+                                            <span class="badge badge-warning text-dark"><i class="fas fa-clock"></i> ค้างจ่าย</span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div class="col-12 text-center text-muted py-4" id="noDataMessageMobile">ยังไม่มีข้อมูลการรับซื้อ</div>
+            <% } %>
+        </div>
+    </div>
+
+</div>
+<style>
+    .nav-pills .nav-link { background-color: #eaecf4; color: #858796; transition: all 0.3s ease; }
+    .nav-pills .nav-link:hover { background-color: #dddfeb; color: #4e73df; }
+    .nav-pills .nav-link.active { background-color: #4e73df !important; color: #ffffff !important; box-shadow: 0 4px 6px rgba(50,50,93,.11), 0 1px 3px rgba(0,0,0,.08); }
+    .summary-box { background-color: #f8f9fc; border-left: 4px solid #1cc88a; padding: 15px; border-radius: 5px; }
+</style>
+
+<div class="modal fade" id="wizardModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-balance-scale"></i> บันทึกรับซื้อน้ำยาง</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body p-4">
+                
+                <ul class="nav nav-pills nav-justified mb-4" id="pills-tab" role="tablist">
+                    <li class="nav-item"><a class="nav-link active rounded-pill font-weight-bold" data-toggle="pill" href="#step1">1. ข้อมูลลูกค้า</a></li>
+                    <li class="nav-item mx-2"><a class="nav-link rounded-pill font-weight-bold" data-toggle="pill" href="#step2">2. ชั่งน้ำหนัก & คุณภาพ</a></li>
+                    <li class="nav-item"><a class="nav-link rounded-pill font-weight-bold" data-toggle="pill" href="#step3">3. สรุปยอด</a></li>
+                </ul>
+
+                <form id="parasalesForm" class="needs-validation" novalidate>
+                    
+                    <input type="hidden" id="dailyPrice" name="unit_price" value="<%= dailyPrice %>">
+
+                    <div class="tab-content">
+                        
+                        <div class="tab-pane fade show active" id="step1">
+                            <div class="row justify-content-center">
+                                <div class="col-md-8 mb-3">
+                                    <label>ค้นหา / เลือกลูกค้า <span class="text-danger">*</span></label>
+                                    <select name="customer_id" class="form-control" required>
+                                        <option value="">-- กรุณาเลือกลูกค้า --</option>
+                                        <% customers.forEach(function(c) { %>
+                                            <option value="<%= c.id %>"><%= c.customer_code %> : <%= c.customer_name %></option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="text-right mt-3"><button type="button" class="btn btn-primary px-4 btn-next">ถัดไป <i class="fas fa-arrow-right ml-1"></i></button></div>
+                        </div>
+
+                        <div class="tab-pane fade" id="step2">
+							<div class="row mb-3">
+								<div class="col-md-12">
+									<div class="card border-left-info shadow-sm">
+										<div class="card-body py-2">
+											<h6 class="font-weight-bold text-info mb-2"><i class="fas fa-history"></i> ประวัติ 5 รายการล่าสุด (ช่วยพิจารณา DRC)</h6>
+											<div class="table-responsive">
+												<table class="table table-sm table-bordered mb-0" style="font-size: 0.85rem;">
+													<thead class="bg-light">
+														<tr class="text-center">
+															<th>วันที่</th>
+															<th>น้ำหนักสุทธิ (กก.)</th>
+															<th class="text-primary">เปอร์เซ็นต์ (DRC %)</th>
+														</tr>
+													</thead>
+													<tbody id="historyBody">
+														<tr><td colspan="3" class="text-center text-muted">กรุณาเลือกลูกค้าในขั้นตอนที่ 1</td></tr>
+													</tbody>
+												</table>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label>น้ำหนักรวม (กก.) <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" id="grossWeight" name="gross_weight" class="form-control calc-trigger" placeholder="0.00" inputmode="decimal" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label>น้ำหนักถัง (กก.) <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" id="tareWeight" name="tare_weight" class="form-control calc-trigger" placeholder="0.00" inputmode="decimal" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label>เปอร์เซ็นต์ DRC (%) <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" id="drcPercent" name="drc_percent" class="form-control calc-trigger" placeholder="เช่น 32.5" inputmode="decimal"  required>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-12">
+                                    <div class="alert alert-secondary text-center">
+                                        <h6 class="m-0">น้ำหนักสุทธิ: <span id="showNetWeight" class="font-weight-bold text-primary h5">0.00</span> กก.</h6>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-3">
+                                <button type="button" class="btn btn-light border btn-prev"><i class="fas fa-arrow-left mr-1"></i> ย้อนกลับ</button>
+                                <button type="button" class="btn btn-primary px-4 btn-next">ถัดไป <i class="fas fa-arrow-right ml-1"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="step3">
+                            <div class="summary-box mb-4">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <small class="text-muted">น้ำหนักยางแห้ง (กก.)</small><br>
+                                        <span id="showDryRubber" class="font-weight-bold h5 text-dark">0.00</span>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">ราคาประจำวัน (บาท/กก.)</small><br>
+                                        <span class="font-weight-bold h5 text-primary"><%= parseFloat(dailyPrice).toFixed(2) %></span>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">ยอดรวมที่ต้องจ่าย (บาท)</small><br>
+                                        <span id="showTotalAmount" class="font-weight-bold h4 text-success">0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label>ช่องทางการจ่ายเงิน</label>
+                                    <select name="payment_method" class="form-control">
+                                        <option value="cash">เงินสด (Cash)</option>
+                                        <option value="transfer">โอนเข้าบัญชี (Transfer)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label>สถานะ</label>
+                                    <select name="payment_status" class="form-control">
+                                        <option value="paid">จ่ายเงินเรียบร้อย</option>
+                                        <option value="pending">ค้างชำระ (แปะโป้ง)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="inputNetWeight" name="net_weight" value="0">
+                            <input type="hidden" id="inputDryRubber" name="dry_rubber_weight" value="0">
+                            <input type="hidden" id="inputTotalAmount" name="total_amount" value="0">
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <button type="button" class="btn btn-light border btn-prev"><i class="fas fa-arrow-left mr-1"></i> ย้อนกลับ</button>
+                                <button type="submit" class="btn btn-success px-5 shadow-sm"><i class="fas fa-save mr-1"></i> บันทึกข้อมูล</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="viewDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-info text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-search-dollar"></i> รายละเอียดรับซื้อน้ำยาง</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                
+                <div id="detailLoading" class="text-center py-4">
+                    <div class="spinner-border text-info" role="status"></div>
+                    <p class="mt-2 text-muted">กำลังโหลดข้อมูล...</p>
+                </div>
+
+                <div id="detailContent" style="display: none;">
+                    <div class="d-flex justify-content-between border-bottom pb-2 mb-3">
+                        <div>
+                            <small class="text-muted">เลขที่บิล</small><br>
+                            <span class="h6 font-weight-bold text-dark" id="v-receipt"></span>
+                        </div>
+                        <div class="text-right">
+                            <small class="text-muted">วันที่ทำรายการ</small><br>
+                            <span class="h6 font-weight-bold text-dark" id="v-date"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted">ชื่อลูกค้า</small><br>
+                        <span class="h5 font-weight-bold text-primary" id="v-customer"></span>
+                    </div>
+
+                    <div class="bg-light p-3 rounded mb-3 border">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">น้ำหนักรวม:</span> <span class="font-weight-bold text-dark" id="v-gross"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">น้ำหนักถัง:</span> <span class="font-weight-bold text-dark" id="v-tare"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                            <span class="text-muted font-weight-bold">น้ำหนักสุทธิ:</span> <span class="font-weight-bold text-dark h6 mb-0" id="v-net"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 mt-2">
+                            <span class="text-info font-weight-bold">เปอร์เซ็นต์ (DRC):</span> <span class="font-weight-bold text-info h6 mb-0" id="v-drc"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">ยางเนื้อแห้ง:</span> <span class="font-weight-bold text-dark" id="v-dry"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">ราคาประจำวัน:</span> <span class="font-weight-bold text-dark" id="v-price"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded border-left-success shadow-sm mb-3">
+                        <span class="font-weight-bold text-gray-800">ยอดเงินสุทธิ:</span>
+                        <span class="h3 font-weight-bold text-success mb-0" id="v-total"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between text-sm">
+                        <div>สถานะ: <span id="v-status"></span></div>
+                        <div>ผู้รับซื้อ: <span class="font-weight-bold text-muted" id="v-staff"></span></div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('layouts/footer') %>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    $(document).ready(function() {
+
+    // ==========================================
+    // 1. ล้างข้อมูลเมื่อปิด Modal
+    // ==========================================
+    $('#wizardModal').on('hidden.bs.modal', function () {
+        $('#pills-tab li:first-child a').tab('show');
+        $('#parasalesForm')[0].reset();
+        $('#historyBody').html('<tr><td colspan="3" class="text-center text-muted">กรุณาเลือกลูกค้าในขั้นตอนที่ 1</td></tr>');
+        $('#showNetWeight, #showDryRubber, #showTotalAmount').text('0.00');
+        $('#inputNetWeight, #inputDryRubber, #inputTotalAmount').val(0);
+        $('#parasalesForm').find('input, select').removeClass('is-valid is-invalid');
+    });
+
+    // ==========================================
+    // 2. ปุ่ม "ถัดไป" (มี Validation)
+    // ==========================================
+    $('.btn-next').on('click', function(e) {
+        e.preventDefault();
+
+        let currentTab = $(this).closest('.tab-pane');
+        let isValid = true;
+
+        currentTab.find('input[required], select[required]').each(function() {
+            let val = $(this).val();
+            if (!val || val.trim() === '') {
+                $(this).removeClass('is-valid').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            }
+        });
+
+        if (!isValid) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'ข้อมูลไม่ครบถ้วน',
+                text: 'กรุณาระบุข้อมูลในช่องที่มีขอบสีแดงให้ครบครับ',
+                confirmButtonText: 'ตกลง'
+            });
+            return;
+        }
+
+        // Validation พิเศษสำหรับ Tab 2
+        if (currentTab.attr('id') === 'step2') {
+            let gross = parseFloat($('#grossWeight').val()) || 0;
+            let tare  = parseFloat($('#tareWeight').val())  || 0;
+            let drc   = parseFloat($('#drcPercent').val())  || 0;
+
+            if (gross <= tare) {
+                $('#grossWeight, #tareWeight').removeClass('is-valid').addClass('is-invalid');
+                Swal.fire('ข้อมูลผิดพลาด', 'น้ำหนักรวม ต้องมากกว่าน้ำหนักถังนะครับ!', 'error');
+                return;
+            }
+            if (drc <= 0 || drc > 100) {
+                $('#drcPercent').removeClass('is-valid').addClass('is-invalid');
+                Swal.fire('ข้อมูลผิดพลาด', 'เปอร์เซ็นต์ DRC ต้องอยู่ระหว่าง 1 - 100 ครับ', 'error');
+                return;
+            }
+        }
+
+        // ผ่านทุก Validation → เปลี่ยน Tab
+        $('.nav-pills .active').parent().next('li').find('a').tab('show');
+    });
+
+    // ==========================================
+    // 3. ปุ่ม "ย้อนกลับ"
+    // ==========================================
+    $('.btn-prev').on('click', function(e) {
+        e.preventDefault();
+        $('.nav-pills .active').parent().prev('li').find('a').tab('show');
+    });
+
+    // ==========================================
+    // 4. ขอบสีแดงหายเมื่อกรอกข้อมูล
+    // ==========================================
+    $('#parasalesForm').on('input change', 'input[required], select[required]', function() {
+        if ($(this).val() && $(this).val().trim() !== '') {
+            $(this).removeClass('is-invalid').addClass('is-valid');
+        } else {
+            $(this).removeClass('is-valid').addClass('is-invalid');
+        }
+    });
+	
+	// ==========================================
+	// ล็อค Tab ด้านบน ไม่ให้คลิกข้ามได้
+	// ==========================================
+
+	// ปิด data-toggle ของ nav-pills ทั้งหมดก่อน แล้วจัดการเอง
+	$('#pills-tab a').on('click', function(e) {
+		e.preventDefault(); // บล็อกการเปลี่ยน Tab จากการคลิกโดยตรงทุกกรณี
+
+		let clickedHref = $(this).attr('href'); // Tab ที่ต้องการไป เช่น #step2
+		let currentTabId = $('.tab-pane.show.active').attr('id'); // Tab ที่อยู่ตอนนี้ เช่น step1
+
+		// แปลงชื่อ Tab เป็นเลขลำดับ
+		const tabOrder = ['step1', 'step2', 'step3'];
+		let currentIndex = tabOrder.indexOf(currentTabId);
+		let targetIndex  = tabOrder.indexOf(clickedHref.replace('#', ''));
+
+		// ถ้าย้อนกลับ หรืออยู่ Tab เดิม → อนุญาตทันที
+		if (targetIndex <= currentIndex) {
+			$(this).tab('show');
+			return;
+		}
+
+		// ถ้าข้ามไปหน้าถัดไป → ต้องผ่าน Validation ทีละขั้น
+		// วนเช็คทุก Tab ตั้งแต่ปัจจุบันจนถึง Tab ก่อนเป้าหมาย
+		for (let i = currentIndex; i < targetIndex; i++) {
+			let tabToValidate = $('#' + tabOrder[i]);
+			let isValid = true;
+
+			tabToValidate.find('input[required], select[required]').each(function() {
+				let val = $(this).val();
+				if (!val || val.trim() === '') {
+					$(this).removeClass('is-valid').addClass('is-invalid');
+					isValid = false;
+				} else {
+					$(this).removeClass('is-invalid').addClass('is-valid');
+				}
+			});
+
+			if (!isValid) {
+				// กระโดดไปแสดง Tab ที่มีปัญหาแทน
+				$(`#pills-tab a[href="#${tabOrder[i]}"]`).tab('show');
+				Swal.fire({
+					icon: 'warning',
+					title: 'ข้อมูลไม่ครบถ้วน',
+					text: 'กรุณาระบุข้อมูลในช่องที่มีขอบสีแดงให้ครบครับ',
+					confirmButtonText: 'ตกลง'
+				});
+				return; // หยุดทันที
+			}
+
+			// Validation พิเศษ Tab 2
+			if (tabOrder[i] === 'step2') {
+				let gross = parseFloat($('#grossWeight').val()) || 0;
+				let tare  = parseFloat($('#tareWeight').val())  || 0;
+				let drc   = parseFloat($('#drcPercent').val())  || 0;
+
+				if (gross <= tare) {
+					$('#grossWeight, #tareWeight').removeClass('is-valid').addClass('is-invalid');
+					$(`#pills-tab a[href="#step2"]`).tab('show');
+					Swal.fire('ข้อมูลผิดพลาด', 'น้ำหนักรวม ต้องมากกว่าน้ำหนักถังนะครับ!', 'error');
+					return;
+				}
+				if (drc <= 0 || drc > 100) {
+					$('#drcPercent').removeClass('is-valid').addClass('is-invalid');
+					$(`#pills-tab a[href="#step2"]`).tab('show');
+					Swal.fire('ข้อมูลผิดพลาด', 'เปอร์เซ็นต์ DRC ต้องอยู่ระหว่าง 1 - 100 ครับ', 'error');
+					return;
+				}
+			}
+		}
+
+		// ผ่านทุก Validation → อนุญาตให้เปลี่ยน Tab
+		$(this).tab('show');
+	});
+
+    // ==========================================
+    // 5. คำนวณเงิน Real-time
+    // ==========================================
+    $('.calc-trigger').on('input', function() {
+        let gross  = parseFloat($('#grossWeight').val()) || 0;
+        let tare   = parseFloat($('#tareWeight').val())  || 0;
+        let drc    = parseFloat($('#drcPercent').val())  || 0;
+        let price  = parseFloat($('#dailyPrice').val())  || 0;
+
+        let netWeight   = Math.max(gross - tare, 0);
+        let dryRubber   = netWeight * (drc / 100);
+        let totalAmount = dryRubber * price;
+
+        $('#showNetWeight').text(netWeight.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+        $('#showDryRubber').text(dryRubber.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+        $('#showTotalAmount').text(totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+
+        $('#inputNetWeight').val(netWeight.toFixed(2));
+        $('#inputDryRubber').val(dryRubber.toFixed(2));
+        $('#inputTotalAmount').val(totalAmount.toFixed(2));
+    });
+
+    // ==========================================
+    // 6. โหลดประวัติลูกค้า (AJAX)
+    // ==========================================
+    $('select[name="customer_id"]').on('change', function() {
+        let customerId = $(this).val();
+        let historyBody = $('#historyBody');
+
+        if (!customerId) {
+            historyBody.html('<tr><td colspan="3" class="text-center text-muted">กรุณาเลือกลูกค้า</td></tr>');
+            return;
+        }
+
+        historyBody.html('<tr><td colspan="3" class="text-center"><i class="fas fa-spinner fa-spin"></i> กำลังโหลดประวัติ...</td></tr>');
+
+        $.ajax({
+            url: '/myproject_nodejs/api/parasales_list/history/' + customerId,
+            type: 'GET',
+            success: function(response) {
+                if (response.status === 'success' && response.data.length > 0) {
+                    let html = '';
+                    response.data.forEach(function(item) {
+                        html += `
+                            <tr class="text-center">
+                                <td>${item.date}</td>
+                                <td>${parseFloat(item.net_weight).toFixed(2)}</td>
+                                <td class="font-weight-bold text-primary">${parseFloat(item.drc_percent).toFixed(2)}%</td>
+                            </tr>`;
+                    });
+                    historyBody.html(html);
+                } else {
+                    historyBody.html('<tr><td colspan="3" class="text-center text-muted">ไม่พบประวัติการขายก่อนหน้า</td></tr>');
+                }
+            },
+            error: function() {
+                historyBody.html('<tr><td colspan="3" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>');
+            }
+        });
+    });
+
+    // ==========================================
+    // 7. Submit Form (AJAX)
+    // ==========================================
+    $('#parasalesForm').on('submit', function(e) {
+        e.preventDefault();
+
+        let formData = $(this).serialize();
+        let submitBtn = $(this).find('button[type="submit"]');
+        let originalBtnText = submitBtn.html();
+
+        submitBtn.html('<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...').prop('disabled', true);
+
+        $.ajax({
+            url: '/myproject_nodejs/api/parasales_list/add',
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.status === 'success') {
+                    Swal.fire({
+                        icon: 'success', title: 'บันทึกสำเร็จ!', text: response.message,
+                        showConfirmButton: false, timer: 1500
+                    }).then(() => {
+                        $('#wizardModal').modal('hide');
+						
+						// 🚀 เลื่อน Scrollbar ไปบนสุด
+						$('html, body').animate({ scrollTop: 0 }, 600);
+						
+                        let statusBadge = response.data.payment_status === 'paid'
+                            ? '<span class="badge badge-success">จ่ายแล้ว</span>'
+                            : '<span class="badge badge-warning text-dark">ค้างจ่าย</span>';
+                        let borderColor = response.data.payment_status === 'paid' ? 'border-left-success' : 'border-left-warning';
+
+                        // ==========================================
+						// 💻 อัปเดต 1: ยัดลงตาราง (มุมมองคอมพิวเตอร์)
+						// ==========================================
+						if ($.fn.DataTable.isDataTable('#dataTableDesktop')) {
+							let table = $('#dataTableDesktop').DataTable();
+							let newRow = table.row.add([
+								`<div class="text-center">${response.data.receipt_no}</div>`,
+								`<div class="text-center">${response.data.formatted_date}</div>`,
+								response.data.customer_name,
+								`<div class="text-right">${parseFloat(response.data.net_weight).toFixed(2)} กก.</div>`,
+								`<div class="text-right text-info">${parseFloat(response.data.drc_percent).toFixed(2)}%</div>`,
+								`<div class="text-right font-weight-bold text-success">${parseFloat(response.data.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</div>`,
+								`<div class="text-center">${statusBadge}</div>`
+							]).draw(false).node(); 
+							
+							// 🚀 เพิ่มบรรทัดนี้: ฝังคลาสและ ID ให้แถวใหม่คลิกได้
+							$(newRow).addClass('view-detail-trigger').attr('data-id', response.data.id).css('cursor', 'pointer');
+
+							$(newRow).css('background-color', '#d1ecf1');
+							setTimeout(() => $(newRow).css('background-color', ''), 2000);
+						}
+
+                        // อัปเดต Card Mobile
+						let newCardHtml = `
+							<div class="col-12 col-md-6 mb-3 transaction-item" style="display:none;">
+								<div class="card ${borderColor} shadow h-100 py-2 view-detail-trigger" data-id="${response.data.id}" style="background-color: #f8fff9; cursor: pointer;">
+									<div class="card-body py-2">
+										<div class="row no-gutters align-items-center">
+											<div class="col mr-2">
+												<div class="text-xs font-weight-bold text-primary mb-1">
+													<i class="fas fa-receipt"></i> ${response.data.receipt_no}
+													<span class="float-right text-muted">${response.data.formatted_date.split(' ')[1]} น.</span>
+												</div>
+												<div class="h6 mb-1 font-weight-bold text-gray-800">${response.data.customer_name}</div>
+												<div class="text-sm mb-1 text-gray-600">
+													นน: <b>${parseFloat(response.data.net_weight).toFixed(2)}</b> |
+													DRC: <b class="text-info">${parseFloat(response.data.drc_percent).toFixed(2)}%</b>
+												</div>
+												<div class="h5 mb-0 font-weight-bold text-success">
+													${parseFloat(response.data.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2})} ฿
+												</div>
+											</div>
+											<div class="col-auto text-center pl-2">${statusBadge}</div>
+										</div>
+									</div>
+								</div>
+							</div>`;
+
+                        $('#noDataMessageMobile').remove();
+                        $('#transactionListMobile').prepend(newCardHtml);
+                        $('#transactionListMobile .transaction-item:first').fadeIn(600);
+                        setTimeout(() => {
+                            $('#transactionListMobile .transaction-item:first .card').css('background-color', '#ffffff');
+                        }, 2000);
+                    });
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = xhr.responseJSON ? xhr.responseJSON.message : 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
+                Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text: errorMessage, confirmButtonText: 'ตกลง' });
+            },
+            complete: function() {
+                submitBtn.html(originalBtnText).prop('disabled', false);
+            }
+        });
+    });
+	// 🚀 ดักจับการคลิกที่รายการบิล (ใช้ .on แบบ Delegate เพื่อรองรับบิลใหม่ที่เพิ่งแอดเข้ามา)
+	$(document).on('click', '.view-detail-trigger', function() {
+		let txId = $(this).data('id');
+		if (!txId) return;
+
+		// สลับให้โชว์หน้า Loading รอไว้
+		$('#detailContent').hide();
+		$('#detailLoading').show();
+		$('#viewDetailModal').modal('show');
+
+		// ยิง AJAX ไปขอข้อมูล
+		$.ajax({
+			url: '/myproject_nodejs/api/parasales/detail/' + txId,
+			type: 'GET',
+			success: function(response) {
+				if (response.status === 'success') {
+					let data = response.data;
+					
+					// เอาข้อมูลไปยัดใส่จุดต่างๆ ใน Modal
+					$('#v-receipt').text(data.receipt_no);
+					$('#v-date').text(data.formatted_date);
+					$('#v-customer').text(data.customer_name);
+					
+					$('#v-gross').text(parseFloat(data.gross_weight).toFixed(2) + ' กก.');
+					$('#v-tare').text(parseFloat(data.tare_weight).toFixed(2) + ' กก.');
+					$('#v-net').text(parseFloat(data.net_weight).toFixed(2) + ' กก.');
+					$('#v-drc').text(parseFloat(data.drc_percent).toFixed(2) + ' %');
+					$('#v-dry').text(parseFloat(data.dry_rubber_weight).toFixed(2) + ' กก.');
+					$('#v-price').text(parseFloat(data.unit_price).toFixed(2) + ' บ./กก.');
+					
+					$('#v-total').text(parseFloat(data.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ฿');
+					$('#v-staff').text(data.staff_name || 'ไม่ระบุ');
+
+					// สร้าง Badge สถานะ
+					let statusHtml = data.payment_status === 'paid' 
+						? '<span class="badge badge-success"><i class="fas fa-check"></i> จ่ายแล้ว</span>' 
+						: '<span class="badge badge-warning text-dark"><i class="fas fa-clock"></i> ค้างจ่าย</span>';
+					$('#v-status').html(statusHtml);
+
+					// ปิด Loading และโชว์เนื้อหาใบเสร็จ
+					$('#detailLoading').hide();
+					$('#detailContent').fadeIn();
+				}
+			},
+			error: function() {
+				$('#viewDetailModal').modal('hide');
+				Swal.fire('ผิดพลาด', 'ไม่สามารถดึงข้อมูลรายละเอียดได้', 'error');
+			}
+		});
+	});
+});
+</script>

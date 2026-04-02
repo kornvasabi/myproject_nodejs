@@ -10,6 +10,9 @@ const reportController = require('./controllers/reportController');
 const multer = require('multer');
 const importController = require('./controllers/importController');
 
+// 🟢 เพิ่มระบบรับซื้อน้ำยาง: ดึง Controller มารอไว้
+const parasalesController = require('./controllers/parasalesController');
+
 // const checkPermission = require('./middleware/checkPermission');
 // 🟢 เพิ่มส่วนนี้เข้าไป: เรียกใช้งาน Route Authentication
 
@@ -20,6 +23,9 @@ const importController = require('./controllers/importController');
 // 1. ตั้งค่าหน้าตาเว็บ (View Engine)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// 🚀 สั่งให้ Express.js ไว้ใจ Proxy (Nginx) และยอมรับ IP ที่ถูกส่งต่อมา
+app.set('trust proxy', true);
 
 // 2. บอกให้ Node รู้ว่าไฟล์นิ่งๆ (Static) อยู่ในโฟลเดอร์ public
 app.use(express.static(path.join(__dirname, 'public')));
@@ -180,6 +186,16 @@ appRouter.get('/price_import', requireAuth, loadMenus, checkPermission, (req, re
 
 // 🟢 API รับไฟล์ Excel (ต้องใช้ upload.single() เพื่อดักจับไฟล์ชื่อ 'price_file')
 appRouter.post('/api/import/excel', requireAuth, upload.single('price_file'), importController.importPriceExcel);
+
+// 1. เปิดหน้าจอ (ดักเช็คสิทธิ์และโหลดเมนูเหมือนหน้าอื่นๆ)
+appRouter.get('/parasales_list', requireAuth, loadMenus, checkPermission, parasalesController.getParasalesList);
+
+appRouter.post('/api/parasales_list/add', requireAuth, parasalesController.addTransaction);
+
+appRouter.get('/api/parasales_list/history/:id', requireAuth, parasalesController.getCustomerHistory);
+
+// 🟢 ดึงรายละเอียดรายการรับซื้อ 1 รายการ
+appRouter.get('/api/parasales/detail/:id', requireAuth, parasalesController.getTransactionDetail);
 
 app.use('/', appRouter);               // ประตูที่ 1: สำหรับ Nginx (9090) ที่โดนตัด URL ไปแล้ว
 app.use('/myproject_nodejs', appRouter); // ประตูที่ 2: สำหรับเข้าพอร์ต 7000 ตรงๆ

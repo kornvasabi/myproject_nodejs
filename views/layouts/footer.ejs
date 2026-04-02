@@ -43,6 +43,41 @@
 	<%- include('../components/global-modal') %>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/myproject_nodejs/js/app-tools.js"></script>
+	<script>
+	$(document).ready(function () {
+		// ✅ ถ้ามี state บันทึกไว้ → apply class ให้ถูกต้อง แล้วลบ attribute ชั่วคราวออก
+		if (sessionStorage.getItem('sidebarHidden') === '1' && $(window).width() < 768) {
+		$('body').addClass('sidebar-toggled');
+		$('.sidebar').addClass('toggled');
+		}
+		// ลบ attribute ชั่วคราวที่ใช้ตอน pre-render
+		document.documentElement.removeAttribute('data-sidebar-hidden');
+
+
+		// ✅ กดลิงก์เมนู → ซ่อน sidebar แล้วบันทึก state
+		$('#accordionSidebar a:not([data-toggle="collapse"])').on('click', function () {
+		if ($(window).width() < 768) {
+		  $('body').addClass('sidebar-toggled');
+		  $('.sidebar').addClass('toggled');
+		  sessionStorage.setItem('sidebarHidden', '1'); // บันทึกสถานะ
+		}
+		});
+
+
+		// ✅ กดปุ่ม 3 ขีด → toggle sidebar และอัปเดต state
+		$('#sidebarToggle, #sidebarToggleTop').on('click', function () {
+		if ($(window).width() < 768) {
+		  const isHidden = $('body').hasClass('sidebar-toggled');
+		  if (isHidden) {
+			sessionStorage.removeItem('sidebarHidden'); // เปิดเมนู → ลบ state
+		  } else {
+			sessionStorage.setItem('sidebarHidden', '1'); // ปิดเมนู → บันทึก state
+		  }
+		}
+	});
+});
+
+	</script>
 </body>
 </html>
 

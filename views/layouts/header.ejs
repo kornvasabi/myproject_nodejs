@@ -17,6 +17,26 @@
 		body { font-size: 0.95rem; font-weight: 400; }
 		h1, h2, h3, h4, h5, h6 { font-weight: 600 !important; }
 	</style>
+	
+	<script>
+		// รันทันทีก่อน render เพื่อป้องกัน sidebar โผล่
+		(function () {
+		  if (window.innerWidth < 768 && sessionStorage.getItem('sidebarHidden') === '1') {
+			document.documentElement.setAttribute('data-sidebar-hidden', 'true');
+		  }
+		})();
+	</script>
+
+	<style>
+		/* ซ่อน sidebar ทันทีถ้ามี attribute นี้ */
+		[data-sidebar-hidden="true"] .sidebar {
+		  width: 0 !important;
+		  overflow: hidden !important;
+		}
+		[data-sidebar-hidden="true"] body {
+		  overflow-x: hidden !important;
+		}
+	</style>
 </head>
 
 <body id="page-top">
