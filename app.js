@@ -239,7 +239,7 @@ app.use((req, res, next) => {
 });
 
 // 6. รันที่พอร์ต 7000 ตามที่คุณกรต้องการ
-const PORT = 7000;
+const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`-------------------------------------------`);
     console.log(`🚀 Myproject_nodejs start at ${PORT}`);
