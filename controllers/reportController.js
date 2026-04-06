@@ -148,7 +148,15 @@ exports.exportIssuePdf = async (req, res) => {
         });
 
         // 3. 🤖 ปลุกเสกเบราว์เซอร์จำลอง (Puppeteer) ให้มาพิมพ์ PDF
-        const browser = await puppeteer.launch({ headless: 'new' });
+        const browser = await puppeteer.launch({ 
+			headless: 'new',
+			args: [
+				'--no-sandbox', 
+				'--disable-setuid-sandbox',
+				'--disable-dev-shm-usage', // แก้ปัญหา RAM จำลองเต็มบน Cloud
+				'--disable-gpu'
+			]
+		});
         const page = await browser.newPage();
         
         // ยัด HTML ใส่เข้าไป และรอให้ฟอนต์ Google โหลดเสร็จ
@@ -175,6 +183,7 @@ exports.exportIssuePdf = async (req, res) => {
 
     } catch (error) {
         console.error("Export PDF Error:", error);
-        res.status(500).send("เกิดข้อผิดพลาดในการสร้างไฟล์ PDF");
+        // 🚀 เปลี่ยนตรงนี้ชั่วคราว ให้มันพ่น error.message ออกมาดูเลยครับ
+        res.status(500).send(`เกิดข้อผิดพลาดในการสร้างไฟล์ PDF: <br> <b>${error.message}</b>`);
     }
 };
