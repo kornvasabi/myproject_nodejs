@@ -195,7 +195,7 @@ appRouter.post('/api/parasales_list/add', requireAuth, parasalesController.addTr
 appRouter.get('/api/parasales_list/history/:id', requireAuth, parasalesController.getCustomerHistory);
 
 // 🟢 ดึงรายละเอียดรายการรับซื้อ 1 รายการ
-appRouter.get('/api/parasales/detail/:id', requireAuth, parasalesController.getTransactionDetail);
+appRouter.get('/api/parasales_list/detail/:id', requireAuth, parasalesController.getTransactionDetail);
 
 app.use('/', appRouter);               // ประตูที่ 1: สำหรับ Nginx (9090) ที่โดนตัด URL ไปแล้ว
 app.use('/myproject_nodejs', appRouter); // ประตูที่ 2: สำหรับเข้าพอร์ต 7000 ตรงๆ

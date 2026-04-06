@@ -688,7 +688,7 @@
 
 		// ยิง AJAX ไปขอข้อมูล
 		$.ajax({
-			url: '/myproject_nodejs/api/parasales/detail/' + txId,
+			url: '/myproject_nodejs/api/parasales_list/detail/' + txId,
 			type: 'GET',
 			success: function(response) {
 				if (response.status === 'success') {
@@ -718,7 +718,11 @@
 					// ปิด Loading และโชว์เนื้อหาใบเสร็จ
 					$('#detailLoading').hide();
 					$('#detailContent').fadeIn();
-				}
+				} else {
+                    // 🚀 BUG FIX: ถ้าสถานะไม่ใช่ success ต้องสั่งปิด Loading และแจ้งเตือนครับ
+                    $('#viewDetailModal').modal('hide');
+                    Swal.fire('ข้อมูลไม่สมบูรณ์', response.message || 'ไม่สามารถโหลดข้อมูลรายการนี้ได้', 'warning');
+                }
 			},
 			error: function() {
 				$('#viewDetailModal').modal('hide');
