@@ -1,7 +1,11 @@
 const db = require('../config/db'); 
 const ExcelJS = require('exceljs');
 
-const puppeteer = require('puppeteer');
+// ดึงมาเตรียมไว้ทั้ง 2 แบบเลยครับ
+const puppeteer = require('puppeteer');           // สำหรับรันบนเครื่องตัวเอง (Local)
+const puppeteerCore = require('puppeteer-core');  // สำหรับรันบน Render
+const chromium = require('@sparticuz/chromium');
+
 const ejs = require('ejs');
 const path = require('path');
 
@@ -148,7 +152,7 @@ exports.exportIssuePdf = async (req, res) => {
         });
 
         // 3. 🤖 ปลุกเสกเบราว์เซอร์จำลอง (Puppeteer) ให้มาพิมพ์ PDF
-        const browser = await puppeteer.launch({ 
+        /*const browser = await puppeteer.launch({ 
 			headless: 'new',
 			args: [
 				'--no-sandbox', 
@@ -157,6 +161,28 @@ exports.exportIssuePdf = async (req, res) => {
 				'--disable-gpu'
 			]
 		});
+		*/
+		
+		// 🤖 ปลุกเสกเบราว์เซอร์จำลอง (เช็คว่าเป็น Local หรือ Server)
+        let browser;
+
+        // ถ้ามีคำว่า production แปลว่ารันอยู่บน Render
+        if (process.env.NODE_ENV === 'production') {
+            // ☁️ โหมด Render.com (ใช้ Sparticuz ไซส์มินิ)
+            browser = await puppeteerCore.launch({
+                args: chromium.args,
+                defaultViewport: chromium.defaultViewport,
+                executablePath: await chromium.executablePath(),
+                headless: chromium.headless,
+                ignoreHTTPSErrors: true,
+            });
+        } else {
+            // 💻 โหมดเครื่องตัวเอง (ใช้ Puppeteer ตัวเต็ม)
+            browser = await puppeteer.launch({ 
+                headless: 'new' 
+            });
+        }
+
         const page = await browser.newPage();
         
         // ยัด HTML ใส่เข้าไป และรอให้ฟอนต์ Google โหลดเสร็จ
