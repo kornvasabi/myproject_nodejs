@@ -1,0 +1,199 @@
+<%- include('layouts/header') %>
+<%- include('layouts/sidebar') %>
+<%- include('layouts/topbar') %>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-users"></i> ข้อมูลลูกค้า</h1>
+        <button class="btn btn-primary shadow-sm" id="btnAddCustomer">
+            <i class="fas fa-plus fa-sm text-white-50"></i> เพิ่มลูกค้าใหม่
+        </button>
+    </div>
+
+    <div class="card shadow mb-4 border-left-primary">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="customerTable" width="100%" cellspacing="0">
+                    <thead class="bg-light text-center">
+                        <tr>
+                            <th>รหัส</th>
+                            <th>ชื่อ-นามสกุล</th>
+                            <th>ประเภท</th>
+                            <th>เบอร์โทรศัพท์</th>
+                            <th>ธนาคาร</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customerTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="customerModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title font-weight-bold" id="modalTitle">เพิ่มลูกค้าใหม่</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="customerForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="customerId" name="id"> <div class="form-group">
+                        <label>ชื่อ-นามสกุล <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="customerName" name="customer_name" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>ประเภทลูกค้า</label>
+                            <select class="form-control" id="customerType" name="customer_type">
+                                <option value="walk_in">ขาจร (Walk-in)</option>
+                                <option value="regular">ประจำ (Regular)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>เบอร์โทรศัพท์</label>
+                            <input type="text" class="form-control" id="phoneNumber" name="phone_number">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>ชื่อธนาคาร</label>
+                            <select class="form-control" id="bankName" name="bank_name">
+                                <option value="">-- ไม่ระบุ --</option>
+                                <option value="KBANK">กสิกรไทย (KBANK)</option>
+                                <option value="SCB">ไทยพาณิชย์ (SCB)</option>
+                                <option value="BBL">กรุงเทพ (BBL)</option>
+                                <option value="KTB">กรุงไทย (KTB)</option>
+                                <option value="BAAC">ธ.ก.ส. (BAAC)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>เลขที่บัญชี</label>
+                            <input type="text" class="form-control" id="bankAccountNo" name="bank_account_no">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('layouts/footer') %>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+$(document).ready(function() {
+    // 🚀 1. ฟังก์ชันโหลดข้อมูลลูกค้าลงตาราง
+    function loadCustomers() {
+        $.get('/api/customers', function(response) {
+            if (response.status === 'success') {
+                let rows = '';
+                response.data.forEach(c => {
+                    let typeBadge = c.customer_type === 'regular' 
+                        ? '<span class="badge badge-success">ลูกค้าประจำ</span>' 
+                        : '<span class="badge badge-secondary">ขาจร</span>';
+                    
+                    // แปลง JSON เป็น String เพื่อแนบไปกับปุ่ม Edit
+                    let customerData = encodeURIComponent(JSON.stringify(c));
+
+                    rows += `
+                        <tr>
+                            <td class="text-center">${c.customer_code}</td>
+                            <td>${c.customer_name}</td>
+                            <td class="text-center">${typeBadge}</td>
+                            <td class="text-center">${c.phone_number || '-'}</td>
+                            <td class="text-center">${c.bank_name || '-'} <br> <small class="text-muted">${c.bank_account_no || ''}</small></td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-info btn-edit" data-info="${customerData}"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-danger btn-delete" data-id="${c.id}" data-name="${c.customer_name}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                $('#customerTableBody').html(rows);
+            }
+        });
+    }
+
+    loadCustomers(); // โหลดข้อมูลทันทีที่เปิดหน้าเว็บ
+
+    // 🚀 2. เปิด Modal สำหรับ "เพิ่มข้อมูล"
+    $('#btnAddCustomer').click(function() {
+        $('#customerForm')[0].reset();
+        $('#customerId').val('');
+        $('#modalTitle').text('เพิ่มลูกค้าใหม่');
+        $('#customerModal').modal('show');
+    });
+
+    // 🚀 3. เปิด Modal สำหรับ "แก้ไขข้อมูล"
+    $(document).on('click', '.btn-edit', function() {
+        let data = JSON.parse(decodeURIComponent($(this).data('info')));
+        
+        $('#customerId').val(data.id);
+        $('#customerName').val(data.customer_name);
+        $('#customerType').val(data.customer_type);
+        $('#phoneNumber').val(data.phone_number);
+        $('#bankName').val(data.bank_name);
+        $('#bankAccountNo').val(data.bank_account_no);
+        
+        $('#modalTitle').text('แก้ไขข้อมูลลูกค้า: ' + data.customer_code);
+        $('#customerModal').modal('show');
+    });
+
+    // 🚀 4. จัดการฟอร์ม (รองรับทั้งเพิ่มและแก้ไขในตัวเดียว)
+    $('#customerForm').submit(function(e) {
+        e.preventDefault();
+        
+        let id = $('#customerId').val();
+        let url = id ? '/api/customers/update/' + id : '/api/customers/add';
+        let formData = $(this).serialize();
+
+        $.post(url, formData, function(response) {
+            if(response.status === 'success') {
+                Swal.fire({ icon: 'success', title: 'สำเร็จ', text: response.message, showConfirmButton: false, timer: 1500 });
+                $('#customerModal').modal('hide');
+                loadCustomers(); // โหลดตารางใหม่
+            } else {
+                Swal.fire('ผิดพลาด', response.message, 'error');
+            }
+        });
+    });
+
+    // 🚀 5. ยกเลิกข้อมูล (Soft Delete)
+    $(document).on('click', '.btn-delete', function() {
+        let id = $(this).data('id');
+        let name = $(this).data('name');
+
+        Swal.fire({
+            title: 'ยืนยันการยกเลิก?',
+            text: `คุณต้องการยกเลิกลูกค้า "${name}" ใช่หรือไม่? (ข้อมูลบิลเก่าๆ จะยังอยู่)`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'ใช่, ยกเลิกเลย!',
+            cancelButtonText: 'ปิด'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('/api/customers/delete/' + id, function(response) {
+                    if(response.status === 'success') {
+                        Swal.fire('ยกเลิกสำเร็จ!', response.message, 'success');
+                        loadCustomers(); // โหลดตารางใหม่
+                    }
+                });
+            }
+        });
+    });
+});
+</script>

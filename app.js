@@ -1,6 +1,7 @@
 // โหลดเครื่องมือที่ติดตั้งไว้
 const express = require('express');
 const session = require('express-session');
+const favicon = require('serve-favicon');
 const path = require('path');
 const app = express();
 const { requireAuth } = require('./middleware/authMiddleware');
@@ -9,6 +10,10 @@ const userController = require('./controllers/userController');
 const reportController = require('./controllers/reportController');
 const multer = require('multer');
 const importController = require('./controllers/importController');
+const customerController = require('./controllers/customerController'); // ปรับ path ให้ตรงกับโปรเจกต์
+
+// 🚀 นำโค้ดนี้ไปวางไว้บนๆ (ก่อนถึงพวก app.use(express.static...))
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // 🟢 เพิ่มระบบรับซื้อน้ำยาง: ดึง Controller มารอไว้
 const parasalesController = require('./controllers/parasalesController');
@@ -196,6 +201,18 @@ appRouter.get('/api/parasales_list/history/:id', requireAuth, parasalesControlle
 
 // 🟢 ดึงรายละเอียดรายการรับซื้อ 1 รายการ
 appRouter.get('/api/parasales_list/detail/:id', requireAuth, parasalesController.getTransactionDetail);
+
+// ==========================================
+// 🟢 ระบบจัดการลูกค้า (Customer)
+// ==========================================
+// 1. หน้า View (ต้องล็อคอิน + โหลดเมนู + เช็คสิทธิ์)
+appRouter.get('/customers', requireAuth, loadMenus, checkPermission, customerController.customerPage);
+
+// 2. API สำหรับโหลดและจัดการข้อมูล (แค่ล็อคอินก็พอ ไม่ต้องเช็คสิทธิ์ระดับเมนู เพราะหน้าบ้านโดนบล็อกไว้แล้ว)
+appRouter.get('/api/customers', requireAuth, customerController.getCustomers);
+appRouter.post('/api/customers/add', requireAuth, customerController.addCustomer);
+appRouter.post('/api/customers/update/:id', requireAuth, customerController.updateCustomer);
+appRouter.post('/api/customers/delete/:id', requireAuth, customerController.deleteCustomer);
 
 app.use('/', appRouter);               // ประตูที่ 1: สำหรับ Nginx (9090) ที่โดนตัด URL ไปแล้ว
 app.use('/myproject_nodejs', appRouter); // ประตูที่ 2: สำหรับเข้าพอร์ต 7000 ตรงๆ
