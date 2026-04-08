@@ -57,30 +57,58 @@ exports.addTransaction = async (req, res) => {
     } = req.body;
 
     const branchId = 1; // ลานสาขา 1
-    // const staffId = req.session && req.session.user ? req.session.user.id : 1; // ดึง ID พนักงานจาก Session
+    const staffId = 1; // ดึง ID พนักงาน
     
-    const staffId = 1;
-    // สร้างเลขที่บิลอัตโนมัติ (เช่น REC-260401-1234)
-    const datePrefix = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const receiptNo = `REC-${datePrefix}-${randomSuffix}`;
-	
-	// 🚀 ดึง IP Address ของ Client (รองรับ Nginx แบบ 100%)
+    // 🚀 ดึง IP Address ของ Client (รองรับ Nginx แบบ 100%)
     let ipAddress = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || req.socket.remoteAddress || '';
-    // ถ้าผ่าน Proxy หลายชั้น มันจะมาเป็นชุด (เช่น 192.168.0.18, 10.0.0.1) ให้เอาตัวแรกสุด
-    if (ipAddress.includes(',')) {
-        ipAddress = ipAddress.split(',')[0].trim();
-    }
-    // แปลง IPv6 ของ localhost เป็น IPv4 ให้อ่านง่าย
-    if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1') {
-        ipAddress = '127.0.0.1';
-    }
+    if (ipAddress.includes(',')) ipAddress = ipAddress.split(',')[0].trim();
+    if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1') ipAddress = '127.0.0.1';
 
     // 🚀 เปิดโหมด Transaction (บันทึกหลายตารางพร้อมกัน)
     const connection = await db.getConnection();
     await connection.beginTransaction();
 
     try {
+        // ========================================================
+        // 📌 1. สร้างเลขที่บิลรันตาม วันที่-สาขา-ลำดับ (REC-YYMMDD-BBB-SSS)
+        // ========================================================
+        // 1.1 จัดการวันที่ให้เป็นเวลาท้องถิ่น เพื่อป้องกันบิลข้ามวันตอนเช้ามืด
+        const now = new Date();
+        const year = String(now.getFullYear()).slice(2);
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const dateStr = `${year}${month}${day}`; // ผลลัพธ์: 260407
+
+        // 1.2 แปลงสาขาให้เป็น 3 หลัก และสร้าง Prefix สำหรับค้นหา
+        const branchStr = String(branchId).padStart(3, '0'); // ผลลัพธ์: 001
+        const searchPrefix = `REC-${dateStr}-${branchStr}-`; // ผลลัพธ์: REC-260407-001-
+
+        // 1.3 ค้นหาบิลล่าสุดของ "วันนี้" และ "สาขานี้" 
+        // (ใช้ FOR UPDATE เพื่อล็อคแถวชั่วคราว ป้องกันพนักงานกดพร้อมกันแล้วเลขบิลซ้ำ)
+        const [lastReceiptRow] = await connection.query(`
+            SELECT receipt_no 
+            FROM inbound_transactions 
+            WHERE receipt_no LIKE ? 
+            ORDER BY id DESC 
+            LIMIT 1
+            FOR UPDATE
+        `, [`${searchPrefix}%`]);
+
+        let nextSeq = 1; // ค่าเริ่มต้นถ้ายังไม่มีบิลในวันนี้เลย
+        
+        if (lastReceiptRow.length > 0) {
+            const lastReceipt = lastReceiptRow[0].receipt_no;
+            // แยกข้อความด้วยเครื่องหมายขีด (-) แล้วเอาตัวสุดท้าย (ลำดับ) มาบวก 1
+            const parts = lastReceipt.split('-');
+            const lastSeq = parseInt(parts[parts.length - 1], 10);
+            nextSeq = lastSeq + 1;
+        }
+
+        // 1.4 ประกอบร่างเลขบิลใหม่ให้เป็น 3 หลัก (001, 002, 003...)
+        const receiptNo = `${searchPrefix}${String(nextSeq).padStart(3, '0')}`;
+        // ========================================================
+
+
         // 📌 2.1 บันทึกลงตารางบิลรับซื้อ (inbound_transactions)
         const [insertResult] = await connection.query(`
             INSERT INTO inbound_transactions 
@@ -111,7 +139,7 @@ exports.addTransaction = async (req, res) => {
             VALUES (?, 'INSERT', 'inbound_transactions', ?, ? ,?)
         `, [staffId, newTransactionId, logData ,ipAddress]);
 
-        // 🚀 [เพิ่มใหม่] 2.4 ดึงข้อมูลบิลที่เพิ่งบันทึกสำเร็จ เพื่อส่งกลับไปให้หน้าเว็บโชว์
+        // 🚀 2.4 ดึงข้อมูลบิลที่เพิ่งบันทึกสำเร็จ เพื่อส่งกลับไปให้หน้าเว็บโชว์
         const [newRecord] = await connection.query(`
             SELECT it.id, it.receipt_no, 
                    DATE_FORMAT(it.transaction_datetime, '%d/%m/%Y %H:%i') as formatted_date,
@@ -128,8 +156,8 @@ exports.addTransaction = async (req, res) => {
         // 🚀 ส่ง JSON กลับไปบอก AJAX พร้อมแนบข้อมูล (data) ไปด้วย
         res.json({ 
             status: 'success', 
-            message: 'บันทึกบิลรับซื้อน้ำยาง และอัปเดตสต็อกเรียบร้อยแล้ว!',
-            data: newRecord[0]  // <--- ส่งข้อมูลก้อนนี้กลับไปหน้าบ้าน
+            message: `บันทึกบิลเลขที่ ${receiptNo} เรียบร้อยแล้ว!`,
+            data: newRecord[0]  
         });
 
     } catch (error) {
@@ -137,14 +165,13 @@ exports.addTransaction = async (req, res) => {
         await connection.rollback();
         console.error("❌ Transaction Failed, Rollback Executed:", error);
         
-        // 🚀 ส่ง JSON กลับไปบอก AJAX ว่าพัง
         res.status(500).json({ 
             status: 'error', 
             message: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่' 
         });
     } finally {
         // คืน connection ให้ระบบ (สำคัญมาก ไม่งั้นเว็บจะค้าง)
-        connection.release();
+        if (connection) connection.release();
     }
 };
 

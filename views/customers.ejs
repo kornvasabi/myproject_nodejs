@@ -96,7 +96,7 @@
 $(document).ready(function() {
     // 🚀 1. ฟังก์ชันโหลดข้อมูลลูกค้าลงตาราง
     function loadCustomers() {
-        $.get('/api/customers', function(response) {
+        $.get('/myproject_nodejs/api/customers', function(response) {
             if (response.status === 'success') {
                 let rows = '';
                 response.data.forEach(c => {
@@ -156,7 +156,7 @@ $(document).ready(function() {
         e.preventDefault();
         
         let id = $('#customerId').val();
-        let url = id ? '/api/customers/update/' + id : '/api/customers/add';
+        let url = id ? '/myproject_nodejs/api/customers/update/' + id : '/api/customers/add';
         let formData = $(this).serialize();
 
         $.post(url, formData, function(response) {
@@ -186,7 +186,7 @@ $(document).ready(function() {
             cancelButtonText: 'ปิด'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post('/api/customers/delete/' + id, function(response) {
+                $.post('/myproject_nodejs/api/customers/delete/' + id, function(response) {
                     if(response.status === 'success') {
                         Swal.fire('ยกเลิกสำเร็จ!', response.message, 'success');
                         loadCustomers(); // โหลดตารางใหม่
