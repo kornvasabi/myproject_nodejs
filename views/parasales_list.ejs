@@ -313,9 +313,13 @@
                 </div>
 
             </div>
-            <div class="modal-footer bg-light">
+            <div class="modal-footer bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-danger" id="btnCancelBill" style="display: none;">
+                    <i class="fas fa-ban"></i> ยกเลิกบิลนี้
+                </button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">ปิดหน้าต่าง</button>
             </div>
+			
         </div>
     </div>
 </div>
@@ -710,10 +714,24 @@
 					$('#v-staff').text(data.staff_name || 'ไม่ระบุ');
 
 					// สร้าง Badge สถานะ
-					let statusHtml = data.payment_status === 'paid' 
+					/*let statusHtml = data.payment_status === 'paid' 
 						? '<span class="badge badge-success"><i class="fas fa-check"></i> จ่ายแล้ว</span>' 
 						: '<span class="badge badge-warning text-dark"><i class="fas fa-clock"></i> ค้างจ่าย</span>';
-					$('#v-status').html(statusHtml);
+					$('#v-status').html(statusHtml);*/
+					
+					// สร้าง Badge สถานะ (เพิ่มเคส cancelled เข้าไป)
+                    let statusHtml = '';
+                    if (data.payment_status === 'cancelled') {
+                        statusHtml = '<span class="badge badge-danger"><i class="fas fa-times"></i> ยกเลิกแล้ว</span>';
+                        $('#btnCancelBill').hide(); // ถ้าบิลยกเลิกไปแล้ว ให้ซ่อนปุ่ม
+                    } else if (data.payment_status === 'paid') {
+                        statusHtml = '<span class="badge badge-success"><i class="fas fa-check"></i> จ่ายแล้ว</span>';
+                        $('#btnCancelBill').data('id', txId).show(); // ฝัง ID และโชว์ปุ่ม
+                    } else {
+                        statusHtml = '<span class="badge badge-warning text-dark"><i class="fas fa-clock"></i> ค้างจ่าย</span>';
+                        $('#btnCancelBill').data('id', txId).show(); // ฝัง ID และโชว์ปุ่ม
+                    }
+                    $('#v-status').html(statusHtml);
 
 					// ปิด Loading และโชว์เนื้อหาใบเสร็จ
 					$('#detailLoading').hide();
@@ -730,5 +748,73 @@
 			}
 		});
 	});
+	
+	// ==========================================
+    // 8. สั่งยกเลิกบิล (Cancel Transaction) แบบไม่รีเฟรชหน้า
+    // ==========================================
+    $('#btnCancelBill').click(function() {
+        let txId = $(this).data('id');
+        let receiptNo = $('#v-receipt').text();
+
+        Swal.fire({
+            title: 'ยืนยันการยกเลิกบิล?',
+            text: `คุณต้องการยกเลิกบิล ${receiptNo} ใช่หรือไม่? (ระบบจะหักสต็อกน้ำยางกลับคืนอัตโนมัติ)`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'ใช่, ยกเลิกบิล!',
+            cancelButtonText: 'ปิดหน้าต่าง'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // เปลี่ยนปุ่มเป็นสถานะกำลังโหลด
+                let btn = $(this);
+                let originalHtml = btn.html();
+                btn.html('<i class="fas fa-spinner fa-spin"></i> กำลังดำเนินการ...').prop('disabled', true);
+
+                $.post('/myproject_nodejs/api/parasales_list/cancel/' + txId, function(response) {
+                    if (response.status === 'success') {
+                        $('#viewDetailModal').modal('hide');
+                        Swal.fire('ยกเลิกสำเร็จ!', response.message, 'success').then(() => {
+                            
+                            // 🚀 1. เตรียมป้ายสถานะสีแดง (ยกเลิกแล้ว)
+                            let cancelBadge = '<span class="badge badge-danger"><i class="fas fa-times"></i> ยกเลิกแล้ว</span>';
+
+                            // 🚀 2. อัปเดตในตารางคอมพิวเตอร์ (Desktop)
+                            let desktopRow = $(`#dataTableDesktop tr.view-detail-trigger[data-id="${txId}"]`);
+                            if (desktopRow.length > 0) {
+                                // เปลี่ยนสถานะในคอลัมน์สุดท้าย (td ตัวสุดท้าย)
+                                desktopRow.find('td:last-child').html(cancelBadge);
+                                // แถม: ทำเอฟเฟกต์กระพริบสีแดงให้รู้ว่าบรรทัดนี้ถูกเปลี่ยน
+                                desktopRow.css('background-color', '#f8d7da');
+                                setTimeout(() => desktopRow.css('background-color', ''), 2000);
+                            }
+
+                            // 🚀 3. อัปเดตในการ์ดมือถือ (Mobile)
+                            let mobileCard = $(`#transactionListMobile .view-detail-trigger[data-id="${txId}"]`);
+                            if (mobileCard.length > 0) {
+                                // เอาสีขอบเดิมออก แล้วใส่ขอบสีแดงเข้าไปแทน
+                                mobileCard.removeClass('border-left-success border-left-warning').addClass('border-left-danger');
+                                // เปลี่ยนป้ายสถานะ
+                                mobileCard.find('.col-auto.text-center.pl-2').html(cancelBadge);
+                                // แถม: เอฟเฟกต์กระพริบสีแดง
+                                mobileCard.css('background-color', '#f8d7da');
+                                setTimeout(() => mobileCard.css('background-color', '#f8fff9'), 2000);
+                            }
+
+                            // คืนค่าปุ่มเผื่อถูกเปิดใช้รอบหน้า
+                            btn.html(originalHtml).prop('disabled', false);
+                        });
+                    } else {
+                        Swal.fire('ผิดพลาด', response.message, 'error');
+                        btn.html(originalHtml).prop('disabled', false);
+                    }
+                }).fail(function() {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้', 'error');
+                    btn.html(originalHtml).prop('disabled', false);
+                });
+            }
+        });
+    });
 });
 </script>

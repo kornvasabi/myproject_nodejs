@@ -202,6 +202,9 @@ appRouter.get('/api/parasales_list/history/:id', requireAuth, parasalesControlle
 // 🟢 ดึงรายละเอียดรายการรับซื้อ 1 รายการ
 appRouter.get('/api/parasales_list/detail/:id', requireAuth, parasalesController.getTransactionDetail);
 
+// 🟢 ยกเลิกรายการรับซื้อ
+appRouter.post('/api/parasales_list/cancel/:id', requireAuth, parasalesController.cancelTransaction);
+
 // ==========================================
 // 🟢 ระบบจัดการลูกค้า (Customer)
 // ==========================================

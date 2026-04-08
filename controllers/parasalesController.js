@@ -222,3 +222,66 @@ exports.getTransactionDetail = async (req, res) => {
         res.status(500).json({ status: 'error', message: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
     }
 };
+
+// 🟢 [POST] API ยกเลิกบิลรับซื้อ
+exports.cancelTransaction = async (req, res) => {
+    const txId = req.params.id;
+    // const staffId = req.session && req.session.user ? req.session.user.id : 1; 
+    const staffId = 1;
+
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+        // 1. ตรวจสอบว่ามีบิลนี้อยู่จริง และยังไม่ได้ถูกยกเลิก (ใช้ FOR UPDATE ป้องกันคนกดเบิ้ล)
+        const [txData] = await connection.query(`
+            SELECT branch_id, net_weight, payment_status 
+            FROM inbound_transactions 
+            WHERE id = ? FOR UPDATE
+        `, [txId]);
+
+        if (txData.length === 0) throw new Error('ไม่พบข้อมูลบิลนี้ในระบบ');
+        if (txData[0].payment_status === 'cancelled') throw new Error('บิลนี้ถูกยกเลิกไปแล้ว');
+
+        const branchId = txData[0].branch_id;
+        const netWeight = parseFloat(txData[0].net_weight);
+
+        // 2. เปลี่ยนสถานะบิลเป็น 'cancelled'
+        await connection.query(`
+            UPDATE inbound_transactions 
+            SET payment_status = 'cancelled' 
+            WHERE id = ?
+        `, [txId]);
+
+        // 3. หักสต็อกกลับคืน (Reverse Inventory Ledger)
+        // หาตัวเลขสต็อกล่าสุดของสาขานี้มาดูก่อน
+        const [lastLedger] = await connection.query(`
+            SELECT balance FROM inventory_ledgers WHERE branch_id = ? ORDER BY id DESC LIMIT 1
+        `, [branchId]);
+        
+        let previousBalance = lastLedger.length > 0 ? parseFloat(lastLedger[0].balance) : 0;
+        let newBalance = previousBalance - netWeight; // 🚀 หักน้ำยางที่เคยรับเข้ามา ออกไป
+
+        await connection.query(`
+            INSERT INTO inventory_ledgers 
+            (branch_id, transaction_type, reference_id, movement_date, volume_out, balance) 
+            VALUES (?, 'cancel_inbound', ?, NOW(), ?, ?)
+        `, [branchId, txId, netWeight, newBalance]);
+
+        // 4. บันทึกประวัติการทำงาน (Audit Log)
+        await connection.query(`
+            INSERT INTO audit_logs (user_id, action, table_name, record_id, new_values) 
+            VALUES (?, 'CANCEL', 'inbound_transactions', ?, ?)
+        `, [staffId, txId, JSON.stringify({ action: 'ยกเลิกบิล', reversed_weight: netWeight })]);
+
+        await connection.commit();
+        res.json({ status: 'success', message: 'ยกเลิกบิล และหักสต็อกคืนเรียบร้อยแล้ว' });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error("Cancel Transaction Error:", error);
+        res.status(500).json({ status: 'error', message: error.message || 'เกิดข้อผิดพลาดในการยกเลิกบิล' });
+    } finally {
+        if (connection) connection.release();
+    }
+};
