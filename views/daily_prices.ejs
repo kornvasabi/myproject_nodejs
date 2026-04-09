@@ -1,0 +1,199 @@
+<%- include('layouts/header') %>
+<%- include('layouts/sidebar') %>
+<%- include('layouts/topbar') %>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-tags"></i> ราคารับซื้อประจำวัน</h1>
+        <button class="btn btn-primary shadow-sm" id="btnAddPrice">
+            <i class="fas fa-plus fa-sm text-white-50"></i> กำหนดราคาใหม่
+        </button>
+    </div>
+
+    <div class="card shadow mb-4 border-left-success">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="priceTable" width="100%" cellspacing="0">
+                    <thead class="bg-light text-center">
+                        <tr>
+                            <th>วันที่ประกาศ</th>
+                            <th>สาขา</th>
+                            <th class="text-success">ราคาซื้อหน้าลาน (฿)</th>
+                            <th class="text-primary">ราคาส่งโรงงาน (฿)</th>
+                            <th>ผู้บันทึก</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="priceTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="priceModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-success text-white">
+                <h5 class="modal-title font-weight-bold" id="modalTitle">กำหนดราคาประจำวัน</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="priceForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="priceId" name="id">
+                    
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>วันที่ประกาศ <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="effectiveDate" name="effective_date" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>สาขา <span class="text-danger">*</span></label>
+                            <select class="form-control" id="formBranchId" name="branch_id" required>
+                                <option value="">-- เลือกสาขา --</option>
+                                <% if (typeof branches !== 'undefined') { %>
+                                    <% branches.forEach(function(b) { %>
+                                        <option value="<%= b.id %>"><%= b.branch_name %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-2">
+                        <div class="col-md-6 form-group">
+                            <label class="font-weight-bold text-success">ราคาซื้อหน้าลาน (บาท/กก.) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control text-lg" id="buyPrice" name="buy_price_per_kg" placeholder="0.00" inputmode="decimal" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="font-weight-bold text-primary">ราคาส่งโรงงาน (คาดการณ์)</label>
+                            <input type="number" step="0.01" class="form-control text-lg" id="sellPrice" name="sell_price_per_kg" placeholder="0.00" inputmode="decimal">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> บันทึกราคา</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('layouts/footer') %>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+$(document).ready(function() {
+    
+    function loadPrices() {
+        $.get('/myproject_nodejs/api/daily_prices', function(response) {
+            if (response.status === 'success') {
+                let rows = '';
+                response.data.forEach(p => {
+                    let priceData = encodeURIComponent(JSON.stringify(p));
+                    rows += `
+                        <tr>
+                            <td class="text-center font-weight-bold">${p.display_date}</td>
+                            <td class="text-center"><span class="badge badge-info">${p.branch_name || 'ไม่ระบุ'}</span></td>
+                            <td class="text-right text-success font-weight-bold h6 mb-0">${parseFloat(p.buy_price_per_kg).toFixed(2)}</td>
+                            <td class="text-right text-primary">${p.sell_price_per_kg ? parseFloat(p.sell_price_per_kg).toFixed(2) : '-'}</td>
+                            <td class="text-center"><small class="text-muted">${p.created_by_name || 'System'}</small></td>
+                            <td class="text-center" style="white-space: nowrap;">
+                                <button class="btn btn-sm btn-info btn-edit" data-info="${priceData}"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-danger btn-delete" data-id="${p.id}" data-date="${p.display_date}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                if ($.fn.DataTable.isDataTable('#priceTable')) {
+                    $('#priceTable').DataTable().clear().destroy();
+                }
+                $('#priceTableBody').html(rows);
+                $('#priceTable').DataTable({
+                    language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' },
+                    order: [[0, 'desc']] // ให้เรียงวันที่ล่าสุดขึ้นก่อนเสมอ
+                });
+            }
+        });
+    }
+
+    loadPrices(); 
+
+    // เปิด Modal เพิ่มข้อมูล (เซ็ตค่าวันที่เป็น "วันนี้" อัตโนมัติ)
+    $('#btnAddPrice').click(function() {
+        $('#priceForm')[0].reset();
+        $('#priceId').val('');
+        // ดึงวันที่ปัจจุบันมาใส่ในช่อง
+        document.getElementById('effectiveDate').valueAsDate = new Date();
+        
+        $('#modalTitle').text('กำหนดราคารับซื้อประจำวัน');
+        $('#priceModal').modal('show');
+    });
+
+    // เปิด Modal แก้ไข
+    $(document).on('click', '.btn-edit', function() {
+        let data = JSON.parse(decodeURIComponent($(this).data('info')));
+        
+        $('#priceId').val(data.id);
+        $('#effectiveDate').val(data.raw_date); // ใช้ raw_date (YYYY-MM-DD) ยัดเข้า input type="date"
+        $('#formBranchId').val(data.branch_id);
+        $('#buyPrice').val(data.buy_price_per_kg);
+        $('#sellPrice').val(data.sell_price_per_kg);
+        
+        $('#modalTitle').text('แก้ไขราคาวันที่: ' + data.display_date);
+        $('#priceModal').modal('show');
+    });
+
+    // บันทึกฟอร์ม
+    $('#priceForm').submit(function(e) {
+        e.preventDefault();
+        
+        let id = $('#priceId').val();
+        let url = id ? '/myproject_nodejs/api/daily_prices/update/' + id : '/myproject_nodejs/api/daily_prices/add';
+        let formData = $(this).serialize();
+
+        $.post(url, formData, function(response) {
+            if(response.status === 'success') {
+                Swal.fire({ icon: 'success', title: 'สำเร็จ', text: response.message, showConfirmButton: false, timer: 1500 });
+                $('#priceModal').modal('hide');
+                loadPrices(); 
+            } else {
+                Swal.fire('ผิดพลาด', response.message, 'warning');
+            }
+        });
+    });
+
+    // แก้ไขสคริปต์ในส่วน $(document).on('click', '.btn-delete', ...)
+    $(document).on('click', '.btn-delete', function() {
+        let id = $(this).data('id');
+        let date = $(this).data('date');
+
+        Swal.fire({
+            title: 'ยืนยันการยกเลิกราคา?',
+            text: `คุณต้องการยกเลิกการประกาศราคาของวันที่ "${date}" ใช่หรือไม่?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'ใช่, ยกเลิกเลย!',
+            cancelButtonText: 'ปิด'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('/myproject_nodejs/api/daily_prices/delete/' + id, function(response) {
+                    if(response.status === 'success') {
+                        Swal.fire('ยกเลิกสำเร็จ!', response.message, 'success');
+                        loadPrices(); // รีโหลดตาราง (รายการที่ยกเลิกจะหายไปจากหน้าจอเพราะ filter ไว้)
+                    } else {
+                        Swal.fire('ผิดพลาด!', response.message, 'error');
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
