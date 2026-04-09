@@ -1,0 +1,324 @@
+<%- include('layouts/header') %>
+<%- include('layouts/sidebar') %>
+<%- include('layouts/topbar') %>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-truck-moving"></i> ส่งน้ำยางเข้าโรงงาน</h1>
+        <button class="btn btn-primary shadow-sm" id="btnAddOutbound">
+            <i class="fas fa-plus fa-sm text-white-50"></i> สร้างบิลส่งออก
+        </button>
+    </div>
+
+    <div class="card shadow mb-4 border-left-primary">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="outboundTable" width="100%" cellspacing="0">
+                    <thead class="bg-light text-center">
+                        <tr>
+                            <th>เลขที่บิล</th>
+                            <th>วัน-เวลาที่ส่ง</th>
+                            <th>สาขาต้นทาง</th>
+                            <th>โรงงานปลายทาง</th>
+                            <th>น้ำหนักลาน (กก.)</th>
+                            <th>สถานะ</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="outboundTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createOutboundModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-file-export"></i> สร้างบิลส่งออกน้ำยาง</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="createOutboundForm">
+                <div class="modal-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>ออกจากลานสาขา <span class="text-danger">*</span></label>
+                            <select class="form-control" name="branch_id" required>
+                                <option value="">-- เลือกสาขา --</option>
+                                <% if (typeof branches !== 'undefined') { %>
+                                    <% branches.forEach(function(b) { %>
+                                        <option value="<%= b.id %>"><%= b.branch_name %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>ไปส่งที่โรงงาน <span class="text-danger">*</span></label>
+                            <select class="form-control" name="factory_id" required>
+                                <option value="">-- เลือกโรงงาน --</option>
+                                <% if (typeof factories !== 'undefined') { %>
+                                    <% factories.forEach(function(f) { %>
+                                        <option value="<%= f.id %>"><%= f.factory_name %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-4 form-group">
+                            <label>น้ำหนักสุทธิ (ชั่งที่ลาน) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control border-left-info" name="yard_net_weight" placeholder="กก." required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>% DRC (ประเมินที่ลาน) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control border-left-info" name="yard_drc_percent" placeholder="%" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>ค่าขนส่งรอบนี้ (บาท)</label>
+                            <input type="number" step="0.01" class="form-control" name="transport_cost" value="0" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-2 text-sm">
+                        <i class="fas fa-exclamation-triangle"></i> <b>คำเตือน:</b> เมื่อกดบันทึก ระบบจะตัดสต็อกน้ำยางของสาขาที่เลือกทันที
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-truck"></i> บันทึกและตัดสต็อก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="closeOutboundModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-success text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-check-circle"></i> ปิดบิลส่งออก (รับเงินจากโรงงาน)</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="closeOutboundForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="closeTxId" name="id">
+                    
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <div><small class="text-muted">เลขที่บิล:</small> <span class="font-weight-bold text-dark" id="closeDeliveryNo"></span></div>
+                        <div><small class="text-muted">น้ำหนักลานเดิม:</small> <span class="font-weight-bold text-info" id="closeYardWeight"></span> กก.</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 form-group">
+                            <label>น้ำหนักโรงงาน (กก.) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control calc-profit" id="facWeight" name="factory_net_weight" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>% DRC โรงงาน <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control calc-profit" id="facDrc" name="factory_drc_percent" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>ราคาโรงงาน (บ./กก. ยางแห้ง) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control calc-profit" id="facPrice" name="factory_unit_price" required>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3 p-3 bg-light rounded border">
+                        <div class="col-md-4 form-group mb-0">
+                            <label class="text-success font-weight-bold">รายได้จากโรงงาน (บาท)</label>
+                            <input type="number" step="0.01" class="form-control font-weight-bold text-success" id="totalRev" name="total_revenue" readonly>
+                        </div>
+                        <div class="col-md-4 form-group mb-0">
+                            <label class="text-danger font-weight-bold">ต้นทุนรวม + ค่าขนส่ง (บาท) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control calc-profit" id="totalCost" name="total_cost" required>
+                        </div>
+                        <div class="col-md-4 form-group mb-0">
+                            <label class="text-primary font-weight-bold">กำไร/ขาดทุน สุทธิ (บาท)</label>
+                            <input type="number" step="0.01" class="form-control font-weight-bold" id="netProfit" name="net_profit" readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> บันทึกและปิดยอด</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('layouts/footer') %>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+$(document).ready(function() {
+    
+    // 🚀 1. โหลดข้อมูลลงตาราง
+    function loadOutbounds() {
+        $.get('/myproject_nodejs/api/outbounds', function(response) {
+            if (response.status === 'success') {
+                let rows = '';
+                response.data.forEach(o => {
+                    let btnClose = '';
+                    let btnCancel = '';
+                    let statusBadge = '';
+
+                    // เช็คสถานะเพื่อวาดปุ่ม
+                    if (o.status === 'processing') {
+                        statusBadge = '<span class="badge badge-warning text-dark"><i class="fas fa-truck"></i> กำลังส่ง</span>';
+                        btnClose = `<button class="btn btn-sm btn-success btn-close-bill" data-info='${encodeURIComponent(JSON.stringify(o))}' title="ปิดบิล (ใส่ข้อมูลโรงงาน)"><i class="fas fa-check-circle"></i> ปิดยอด</button>`;
+                        btnCancel = `<button class="btn btn-sm btn-danger btn-cancel-bill" data-id="${o.id}" data-no="${o.delivery_no}" title="ยกเลิกบิล (คืนสต็อก)"><i class="fas fa-times"></i></button>`;
+                    } else if (o.status === 'completed') {
+                        statusBadge = '<span class="badge badge-success"><i class="fas fa-check"></i> เสร็จสิ้น</span>';
+                        // ถ้าเสร็จแล้ว โชว์กำไรแทนปุ่ม
+                        let profitClass = o.net_profit >= 0 ? 'text-success' : 'text-danger';
+                        btnClose = `<span class="font-weight-bold ${profitClass}">${parseFloat(o.net_profit).toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span>`;
+                    } else {
+                        statusBadge = '<span class="badge badge-secondary"><i class="fas fa-ban"></i> ยกเลิก</span>';
+                    }
+
+                    rows += `
+                        <tr>
+                            <td class="text-center font-weight-bold">${o.delivery_no}</td>
+                            <td class="text-center">${o.formatted_date}</td>
+                            <td><span class="badge badge-info">${o.branch_name}</span></td>
+                            <td>${o.factory_name}</td>
+                            <td class="text-right font-weight-bold">${parseFloat(o.yard_net_weight).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td class="text-center">${statusBadge}</td>
+                            <td class="text-center" style="white-space: nowrap;">
+                                ${btnClose} ${btnCancel}
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                if ($.fn.DataTable.isDataTable('#outboundTable')) {
+                    $('#outboundTable').DataTable().clear().destroy();
+                }
+                $('#outboundTableBody').html(rows);
+                $('#outboundTable').DataTable({
+                    language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' },
+                    order: [[0, 'desc']]
+                });
+            }
+        });
+    }
+
+    loadOutbounds();
+
+    // 🚀 2. เปิด Modal สร้างบิลส่งออก
+    $('#btnAddOutbound').click(function() {
+        $('#createOutboundForm')[0].reset();
+        $('#createOutboundModal').modal('show');
+    });
+
+    // บันทึกสร้างบิลส่งออก
+    $('#createOutboundForm').submit(function(e) {
+        e.preventDefault();
+        let btn = $(this).find('button[type="submit"]');
+        let originalText = btn.html();
+        btn.html('<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบ...').prop('disabled', true);
+
+        $.post('/myproject_nodejs/api/outbounds/add', $(this).serialize(), function(response) {
+            if(response.status === 'success') {
+                Swal.fire({ icon: 'success', title: 'สำเร็จ', text: response.message, showConfirmButton: false, timer: 2000 });
+                $('#createOutboundModal').modal('hide');
+                loadOutbounds(); 
+            } else {
+                Swal.fire('ข้อผิดพลาด', response.message, 'warning');
+            }
+        }).fail(function() {
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+        }).always(function() {
+            btn.html(originalText).prop('disabled', false);
+        });
+    });
+
+    // 🚀 3. เปิด Modal ปิดบิลโรงงาน
+    $(document).on('click', '.btn-close-bill', function() {
+        let data = JSON.parse(decodeURIComponent($(this).data('info')));
+        
+        $('#closeOutboundForm')[0].reset();
+        $('#closeTxId').val(data.id);
+        $('#closeDeliveryNo').text(data.delivery_no);
+        $('#closeYardWeight').text(parseFloat(data.yard_net_weight).toLocaleString('en-US', {minimumFractionDigits: 2}));
+        
+        $('#closeOutboundModal').modal('show');
+    });
+
+    // 🚀 4. ระบบคำนวณกำไร Real-time
+    $('.calc-profit').on('input', function() {
+        let weight = parseFloat($('#facWeight').val()) || 0;
+        let drc = parseFloat($('#facDrc').val()) || 0;
+        let price = parseFloat($('#facPrice').val()) || 0;
+        let cost = parseFloat($('#totalCost').val()) || 0;
+
+        // สูตรคำนวณรายได้: (น้ำหนัก * DRC%) * ราคาโรงงาน
+        let dryRubber = weight * (drc / 100);
+        let revenue = dryRubber * price;
+        let profit = revenue - cost;
+
+        $('#totalRev').val(revenue.toFixed(2));
+        
+        // เปลี่ยนสีกำไร
+        let profitInput = $('#netProfit');
+        profitInput.val(profit.toFixed(2));
+        if (profit >= 0) {
+            profitInput.removeClass('text-danger').addClass('text-success');
+        } else {
+            profitInput.removeClass('text-success').addClass('text-danger');
+        }
+    });
+
+    // บันทึกปิดบิล
+    $('#closeOutboundForm').submit(function(e) {
+        e.preventDefault();
+        let id = $('#closeTxId').val();
+        
+        $.post('/myproject_nodejs/api/outbounds/close/' + id, $(this).serialize(), function(response) {
+            if(response.status === 'success') {
+                Swal.fire({ icon: 'success', title: 'ปิดบิลสำเร็จ', text: response.message, showConfirmButton: false, timer: 1500 });
+                $('#closeOutboundModal').modal('hide');
+                loadOutbounds(); 
+            } else {
+                Swal.fire('ข้อผิดพลาด', response.message, 'error');
+            }
+        });
+    });
+
+    // 🚀 5. ยกเลิกบิล (และคืนสต็อก)
+    $(document).on('click', '.btn-cancel-bill', function() {
+        let id = $(this).data('id');
+        let no = $(this).data('no');
+
+        Swal.fire({
+            title: 'ยืนยันการยกเลิกบิลส่งออก?',
+            text: `บิล ${no} จะถูกยกเลิก และระบบจะตีคืนน้ำยางเข้าสต็อกสาขาตามเดิม`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'ใช่, ยกเลิกและคืนของ!',
+            cancelButtonText: 'ปิด'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('/myproject_nodejs/api/outbounds/cancel/' + id, function(response) {
+                    if(response.status === 'success') {
+                        Swal.fire('คืนของสำเร็จ!', response.message, 'success');
+                        loadOutbounds(); 
+                    } else {
+                        Swal.fire('ผิดพลาด!', response.message, 'error');
+                    }
+                });
+            }
+        });
+    });
+});
+</script>

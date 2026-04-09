@@ -1,0 +1,173 @@
+<%- include('layouts/header') %>
+<%- include('layouts/sidebar') %>
+<%- include('layouts/topbar') %>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-industry"></i> ข้อมูลโรงงานรับซื้อปลายทาง</h1>
+        <button class="btn btn-primary shadow-sm" id="btnAddFactory">
+            <i class="fas fa-plus fa-sm text-white-50"></i> เพิ่มโรงงานใหม่
+        </button>
+    </div>
+
+    <div class="card shadow mb-4 border-left-primary">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="factoryTable" width="100%" cellspacing="0">
+                    <thead class="bg-light text-center">
+                        <tr>
+                            <th width="10%">ลำดับ</th>
+                            <th width="40%">ชื่อโรงงาน</th>
+                            <th width="35%">ข้อมูลติดต่อ</th>
+                            <th width="15%">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="factoryTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="factoryModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title font-weight-bold" id="modalTitle">เพิ่มโรงงานใหม่</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="factoryForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="factoryId" name="id">
+                    
+                    <div class="form-group">
+                        <label>ชื่อโรงงาน <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="factoryName" name="factory_name" placeholder="เช่น โรงงานยางพาราสยาม" required>
+                    </div>
+                    
+                    <div class="form-group mb-0">
+                        <label>ข้อมูลติดต่อ (เบอร์โทร, ที่อยู่ หรือชื่อผู้ติดต่อ)</label>
+                        <textarea class="form-control" id="contactInfo" name="contact_info" rows="3" placeholder="ระบุข้อมูลที่ใช้ติดต่อโรงงาน..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('layouts/footer') %>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+$(document).ready(function() {
+    
+    // 🚀 1. โหลดข้อมูลลงตาราง
+    function loadFactories() {
+        $.get('/myproject_nodejs/api/factories', function(response) {
+            if (response.status === 'success') {
+                let rows = '';
+                response.data.forEach((f, index) => {
+                    let factoryData = encodeURIComponent(JSON.stringify(f));
+                    rows += `
+                        <tr>
+                            <td class="text-center">${index + 1}</td>
+                            <td class="font-weight-bold text-dark">${f.factory_name}</td>
+                            <td>${f.contact_info ? f.contact_info.replace(/\n/g, '<br>') : '-'}</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-info btn-edit" data-info="${factoryData}"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-danger btn-delete" data-id="${f.id}" data-name="${f.factory_name}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                if ($.fn.DataTable.isDataTable('#factoryTable')) {
+                    $('#factoryTable').DataTable().clear().destroy();
+                }
+                
+                $('#factoryTableBody').html(rows);
+                
+                $('#factoryTable').DataTable({
+                    language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
+                });
+            }
+        });
+    }
+
+    loadFactories(); 
+
+    // 🚀 2. เปิด Modal สำหรับ "เพิ่มข้อมูล"
+    $('#btnAddFactory').click(function() {
+        $('#factoryForm')[0].reset();
+        $('#factoryId').val('');
+        $('#modalTitle').text('เพิ่มโรงงานใหม่');
+        $('#factoryModal').modal('show');
+    });
+
+    // 🚀 3. เปิด Modal สำหรับ "แก้ไขข้อมูล"
+    $(document).on('click', '.btn-edit', function() {
+        let data = JSON.parse(decodeURIComponent($(this).data('info')));
+        
+        $('#factoryId').val(data.id);
+        $('#factoryName').val(data.factory_name);
+        $('#contactInfo').val(data.contact_info);
+        
+        $('#modalTitle').text('แก้ไขข้อมูล: ' + data.factory_name);
+        $('#factoryModal').modal('show');
+    });
+
+    // 🚀 4. จัดการฟอร์ม (บันทึกข้อมูล)
+    $('#factoryForm').submit(function(e) {
+        e.preventDefault();
+        
+        let id = $('#factoryId').val();
+        let url = id ? '/myproject_nodejs/api/factories/update/' + id : '/myproject_nodejs/api/factories/add';
+        let formData = $(this).serialize();
+
+        $.post(url, formData, function(response) {
+            if(response.status === 'success') {
+                Swal.fire({ icon: 'success', title: 'สำเร็จ', text: response.message, showConfirmButton: false, timer: 1500 });
+                $('#factoryModal').modal('hide');
+                loadFactories(); 
+            } else {
+                Swal.fire('ผิดพลาด', response.message, 'error');
+            }
+        });
+    });
+
+    // 🚀 5. ยกเลิกข้อมูล (Soft Delete)
+    $(document).on('click', '.btn-delete', function() {
+        let id = $(this).data('id');
+        let name = $(this).data('name');
+
+        Swal.fire({
+            title: 'ยืนยันการยกเลิก?',
+            text: `คุณต้องการยกเลิกข้อมูลโรงงาน "${name}" ใช่หรือไม่?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'ใช่, ยกเลิกเลย!',
+            cancelButtonText: 'ปิด'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('/myproject_nodejs/api/factories/delete/' + id, function(response) {
+                    if(response.status === 'success') {
+                        Swal.fire('ยกเลิกสำเร็จ!', response.message, 'success');
+                        loadFactories(); 
+                    } else {
+                        Swal.fire('ผิดพลาด!', response.message, 'error');
+                    }
+                });
+            }
+        });
+    });
+});
+</script>

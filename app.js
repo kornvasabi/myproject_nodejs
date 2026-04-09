@@ -13,6 +13,8 @@ const importController = require('./controllers/importController');
 const customerController = require('./controllers/customerController'); // ปรับ path ให้ตรงกับโปรเจกต์
 const branchController = require('./controllers/branchController'); // สาขา
 const priceController = require('./controllers/priceController'); //กำหนดราคา
+const factoryController = require('./controllers/factoryController'); //ตั้งค่าโรงงานปลายทาง
+const outboundController = require('./controllers/outboundController'); //บันทึกข้อมูลส่งน้ำยางโรงงาน
 
 // 🚀 นำโค้ดนี้ไปวางไว้บนๆ (ก่อนถึงพวก app.use(express.static...))
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -236,6 +238,24 @@ appRouter.get('/api/daily_prices', requireAuth, priceController.getPrices);
 appRouter.post('/api/daily_prices/add', requireAuth, priceController.addPrice);
 appRouter.post('/api/daily_prices/update/:id', requireAuth, priceController.updatePrice);
 appRouter.post('/api/daily_prices/delete/:id', requireAuth, priceController.deletePrice);
+
+// ==========================================
+// 🟢 ระบบจัดการโรงงานปลายทาง (Factories)
+// ==========================================
+appRouter.get('/factories', requireAuth, loadMenus, checkPermission, factoryController.factoryPage);
+appRouter.get('/api/factories', requireAuth, factoryController.getFactories);
+appRouter.post('/api/factories/add', requireAuth, factoryController.addFactory);
+appRouter.post('/api/factories/update/:id', requireAuth, factoryController.updateFactory);
+appRouter.post('/api/factories/delete/:id', requireAuth, factoryController.deleteFactory);
+
+// ==========================================
+// 🟢 ระบบส่งออกน้ำยาง (Outbounds)
+// ==========================================
+appRouter.get('/outbounds', requireAuth, loadMenus, checkPermission, outboundController.outboundPage);
+appRouter.get('/api/outbounds', requireAuth, outboundController.getOutbounds);
+appRouter.post('/api/outbounds/add', requireAuth, outboundController.addOutbound);
+appRouter.post('/api/outbounds/close/:id', requireAuth, outboundController.closeOutbound);
+appRouter.post('/api/outbounds/cancel/:id', requireAuth, outboundController.cancelOutbound);
 
 app.use('/', appRouter);               // ประตูที่ 1: สำหรับ Nginx (9090) ที่โดนตัด URL ไปแล้ว
 app.use('/myproject_nodejs', appRouter); // ประตูที่ 2: สำหรับเข้าพอร์ต 7000 ตรงๆ
