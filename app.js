@@ -11,6 +11,7 @@ const reportController = require('./controllers/reportController');
 const multer = require('multer');
 const importController = require('./controllers/importController');
 const customerController = require('./controllers/customerController'); // ปรับ path ให้ตรงกับโปรเจกต์
+const branchController = require('./controllers/branchController'); // สาขา
 
 // 🚀 นำโค้ดนี้ไปวางไว้บนๆ (ก่อนถึงพวก app.use(express.static...))
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -216,6 +217,15 @@ appRouter.get('/api/customers', requireAuth, customerController.getCustomers);
 appRouter.post('/api/customers/add', requireAuth, customerController.addCustomer);
 appRouter.post('/api/customers/update/:id', requireAuth, customerController.updateCustomer);
 appRouter.post('/api/customers/delete/:id', requireAuth, customerController.deleteCustomer);
+
+// ==========================================
+// 🟢 ระบบจัดการสาขา (Branches)
+// ==========================================
+appRouter.get('/branches', requireAuth, loadMenus, checkPermission, branchController.branchPage);
+appRouter.get('/api/branches', requireAuth, branchController.getBranches);
+appRouter.post('/api/branches/add', requireAuth, branchController.addBranch);
+appRouter.post('/api/branches/update/:id', requireAuth, branchController.updateBranch);
+appRouter.post('/api/branches/delete/:id', requireAuth, branchController.deleteBranch);
 
 app.use('/', appRouter);               // ประตูที่ 1: สำหรับ Nginx (9090) ที่โดนตัด URL ไปแล้ว
 app.use('/myproject_nodejs', appRouter); // ประตูที่ 2: สำหรับเข้าพอร์ต 7000 ตรงๆ

@@ -56,8 +56,8 @@ exports.addTransaction = async (req, res) => {
         payment_method, payment_status 
     } = req.body;
 
-    const branchId = 1; // ลานสาขา 1
-    const staffId = 1; // ดึง ID พนักงาน
+    const branchId = req.session.user.branch_id; // ลานสาขา 1
+    const staffId = req.session.user.id;; // ดึง ID พนักงาน
     
     // 🚀 ดึง IP Address ของ Client (รองรับ Nginx แบบ 100%)
     let ipAddress = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || req.socket.remoteAddress || '';
@@ -205,7 +205,7 @@ exports.getTransactionDetail = async (req, res) => {
             SELECT it.*,
                    DATE_FORMAT(it.transaction_datetime, '%d/%m/%Y %H:%i') as formatted_date,
                    c.customer_name, c.customer_code,
-                   u.full_name as staff_name
+                   u.fullname as staff_name
             FROM inbound_transactions it
             LEFT JOIN customers c ON it.customer_id = c.id
             LEFT JOIN users u ON it.staff_id = u.id

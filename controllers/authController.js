@@ -13,10 +13,12 @@ const login = async (req, res) => {
 
         const sql = `
             SELECT 
-                u.id ,u.username ,u.password,u.fullname ,u.group_id ,ug.group_name ,d.dept_name
-            FROM users u
-            LEFT JOIN user_groups ug ON ug.id = u.group_id
-            LEFT JOIN departments d ON d.id = u.dept_id
+				u.id ,u.username ,u.password,u.fullname ,u.group_id ,ug.group_name ,d.dept_name
+				,br.id as branch_id
+			FROM users u
+			LEFT JOIN user_groups ug ON ug.id = u.group_id
+			LEFT JOIN departments d ON d.id = u.dept_id
+			LEFT JOIN branches br ON br.id = u.branch_id
             WHERE u.username = ?
         `;
 
@@ -40,7 +42,8 @@ const login = async (req, res) => {
 					group_id: user.group_id,
                     fullname: user.fullname,
                     group_name: user.group_name,
-                    dept_name: user.dept_name
+                    dept_name: user.dept_name,
+					branch_id: user.branch_id
                 };
 
                 // สั่ง Redirect ไปหน้า Dashboard 

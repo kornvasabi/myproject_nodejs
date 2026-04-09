@@ -17,6 +17,7 @@
                     <thead class="bg-light text-center">
                         <tr>
                             <th>รหัส</th>
+                            <th>สาขา</th>
                             <th>ชื่อ-นามสกุล</th>
                             <th>ประเภท</th>
                             <th>เบอร์โทรศัพท์</th>
@@ -44,6 +45,18 @@
             <form id="customerForm">
                 <div class="modal-body p-4">
                     <input type="hidden" id="customerId" name="id"> <div class="form-group">
+                        <div class="form-group">
+                            <label>สาขาประจำ <span class="text-danger">*</span></label>
+                            <select class="form-control" id="formBranchId" name="branch_id" required>
+                                <option value="">-- เลือกสาขา --</option>
+                                <% if (typeof branches !== 'undefined') { %>
+                                    <% branches.forEach(function(b) { %>
+                                        <option value="<%= b.id %>"><%= b.branch_name %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+
                         <label>ชื่อ-นามสกุล <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="customerName" name="customer_name" required>
                     </div>
@@ -104,12 +117,12 @@ $(document).ready(function() {
                         ? '<span class="badge badge-success">ลูกค้าประจำ</span>' 
                         : '<span class="badge badge-secondary">ขาจร</span>';
                     
-                    // แปลง JSON เป็น String เพื่อแนบไปกับปุ่ม Edit
                     let customerData = encodeURIComponent(JSON.stringify(c));
 
                     rows += `
                         <tr>
-                            <td class="text-center">${c.customer_code}</td>
+                            <td class="text-center font-weight-bold text-primary">${c.customer_code}</td>
+                            <td class="text-center"><span class="badge badge-info">${c.branch_name || '-'}</span></td>
                             <td>${c.customer_name}</td>
                             <td class="text-center">${typeBadge}</td>
                             <td class="text-center">${c.phone_number || '-'}</td>
@@ -121,7 +134,14 @@ $(document).ready(function() {
                         </tr>
                     `;
                 });
+                
+                if ($.fn.DataTable.isDataTable('#customerTable')) {
+                    $('#customerTable').DataTable().clear().destroy();
+                }
                 $('#customerTableBody').html(rows);
+                $('#customerTable').DataTable({
+                    language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
+                });
             }
         });
     }
@@ -141,6 +161,8 @@ $(document).ready(function() {
         let data = JSON.parse(decodeURIComponent($(this).data('info')));
         
         $('#customerId').val(data.id);
+        // 🟢 เพิ่มบรรทัดนี้ เพื่อเซ็ตค่า Dropdown ให้ตรงกับสาขาของลูกค้า
+        $('#formBranchId').val(data.branch_id);
         $('#customerName').val(data.customer_name);
         $('#customerType').val(data.customer_type);
         $('#phoneNumber').val(data.phone_number);
