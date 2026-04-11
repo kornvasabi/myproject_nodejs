@@ -1,44 +1,87 @@
 const db = require('../config/db_para'); // หรือ db_para ตามที่คุณกรตั้งชื่อไฟล์ไว้ครับ
 
-// 🟢 1. เปิดหน้าจอจัดการราคา (ดึงสาขาไปโชว์ใน Dropdown)
+// 🟢 1. เปิดหน้าจอจัดการราคา (กรอง Dropdown สาขาตาม Level)
 exports.pricePage = async (req, res) => {
     try {
-        const [branches] = await db.query('SELECT id, branch_name FROM branches WHERE is_active = 1');
-        res.render('daily_prices', { title: 'จัดการราคารับซื้อประจำวัน', branches: branches });
+        const userId = req.session.user.id;
+        const userBranchId = req.session.user.branch_id;
+        const accessLevel = req.currentPermission ? Number(req.currentPermission.access_level) : 3;
+
+        console.log(`🕵️‍♂️ [Price Page] User: ${userId}, Level: ${accessLevel}`);
+
+        let branchSql = 'SELECT id, branch_name FROM branches WHERE is_active = 1';
+        let branchParams = [];
+
+        // 🚀 กรองรายชื่อสาขาใน Dropdown (ทั้งในหน้าค้นหาและใน Modal)
+        if (accessLevel === 3) {
+            branchSql += ' AND id = ?';
+            branchParams.push(userBranchId);
+        } else if (accessLevel === 2) {
+            branchSql += ' AND (id = ? OR id IN (SELECT branch_id FROM user_branches WHERE user_id = ?))';
+            branchParams.push(userBranchId, userId);
+        }
+
+        const [branches] = await db.query(branchSql, branchParams);
+
+        res.render('daily_prices', { 
+            title: 'จัดการราคารับซื้อประจำวัน', 
+            branches: branches,
+            accessLevel: accessLevel 
+        });
     } catch (error) {
         console.error(error);
         res.status(500).send('Server Error');
     }
 };
 
-// 🟢 2. ดึงข้อมูลราคาทั้งหมด (เพิ่มเงื่อนไข is_active = 1)
+// 🟢 2. ดึงข้อมูลราคา (กรองตารางตาม Level)
 exports.getPrices = async (req, res) => {
     try {
-        const [prices] = await db.query(`
-            SELECT dp.id, dp.branch_id, dp.buy_price_per_kg, dp.sell_price_per_kg, 
+        const userId = req.session.user.id;
+        const userBranchId = req.session.user.branch_id;
+        const accessLevel = req.currentPermission ? Number(req.currentPermission.access_level) : 3;
+
+        let sql = `
+            SELECT dp.*, b.branch_name, u.fullname AS created_by_name,
                    DATE_FORMAT(dp.effective_date, '%Y-%m-%d') AS raw_date,
-                   DATE_FORMAT(dp.effective_date, '%d/%m/%Y') AS display_date,
-                   b.branch_name, u.fullname AS created_by_name
+                   DATE_FORMAT(dp.effective_date, '%d/%m/%Y') AS display_date
             FROM daily_prices dp
             LEFT JOIN branches b ON dp.branch_id = b.id
             LEFT JOIN users u ON dp.created_by = u.id
             WHERE dp.is_active = 1 
-            ORDER BY dp.effective_date DESC, dp.id DESC
-        `);
+        `;
+        let params = [];
+
+        if (accessLevel === 3) {
+            sql += ` AND dp.branch_id = ? `;
+            params.push(userBranchId);
+        } else if (accessLevel === 2) {
+            sql += ` AND (dp.branch_id = ? OR dp.branch_id IN (SELECT branch_id FROM user_branches WHERE user_id = ?)) `;
+            params.push(userBranchId, userId);
+        }
+
+        sql += ` ORDER BY dp.effective_date DESC, dp.id DESC `;
+        
+        const [prices] = await db.query(sql, params);
         res.json({ status: 'success', data: prices });
     } catch (error) {
-        console.error("Get Prices Error:", error);
+        console.error(error);
         res.status(500).json({ status: 'error', message: 'ดึงข้อมูลไม่สำเร็จ' });
     }
 };
 
-// 🟢 3. บันทึกราคาใหม่ (ใส่ is_active = 1 เผื่อไว้)
+// 🟢 3. บันทึกราคาใหม่ (บังคับสาขาถ้าเป็น Level 3)
 exports.addPrice = async (req, res) => {
     try {
-        const { branch_id, effective_date, buy_price_per_kg, sell_price_per_kg } = req.body;
-        const created_by = req.session && req.session.user ? req.session.user.id : 1; 
+        let { branch_id, effective_date, buy_price_per_kg, sell_price_per_kg } = req.body;
+        const accessLevel = req.currentPermission ? Number(req.currentPermission.access_level) : 3;
+        const created_by = req.session.user.id;
 
-        // เช็คราคาซ้ำเฉพาะรายการที่ยัง Active อยู่
+        if (accessLevel === 3) {
+            branch_id = req.session.user.branch_id;
+        }
+
+        // เช็คซ้ำ
         const [duplicate] = await db.query(
             'SELECT id FROM daily_prices WHERE branch_id = ? AND effective_date = ? AND is_active = 1', 
             [branch_id, effective_date]
@@ -47,51 +90,37 @@ exports.addPrice = async (req, res) => {
             return res.json({ status: 'error', message: 'สาขานี้มีการตั้งราคาของวันนี้ไว้แล้ว' });
         }
 
-        const sell_price = sell_price_per_kg && sell_price_per_kg !== '' ? sell_price_per_kg : null;
-
         await db.query(`
             INSERT INTO daily_prices (branch_id, effective_date, buy_price_per_kg, sell_price_per_kg, created_by, created_at, is_active) 
             VALUES (?, ?, ?, ?, ?, NOW(), 1)
-        `, [branch_id, effective_date, buy_price_per_kg, sell_price, created_by]);
+        `, [branch_id, effective_date, buy_price_per_kg, sell_price_per_kg || null, created_by]);
 
-        res.json({ status: 'success', message: 'บันทึกราคาประจำวันสำเร็จ!' });
+        res.json({ status: 'success', message: 'บันทึกราคาสำเร็จ!' });
     } catch (error) {
-        console.error("Add Price Error:", error);
-        res.status(500).json({ status: 'error', message: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' });
+        res.status(500).json({ status: 'error', message: 'เกิดข้อผิดพลาดในการบันทึก' });
     }
 };
 
-// 🟢 4. แก้ไขข้อมูลราคา (API)
+// 🟢 4. แก้ไขราคา (บังคับสาขาถ้าเป็น Level 3)
 exports.updatePrice = async (req, res) => {
     try {
         const id = req.params.id;
-        const { branch_id, effective_date, buy_price_per_kg, sell_price_per_kg } = req.body;
+        let { branch_id, effective_date, buy_price_per_kg, sell_price_per_kg } = req.body;
+        const accessLevel = req.currentPermission ? Number(req.currentPermission.access_level) : 3;
 
-        if (!branch_id || !effective_date || !buy_price_per_kg) {
-            return res.json({ status: 'error', message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+        if (accessLevel === 3) {
+            branch_id = req.session.user.branch_id;
         }
-
-        // เช็คซ้ำอีกรอบเผื่อแก้ไขไปชนกับวันอื่นที่มีอยู่แล้ว (ยกเว้นตัวเอง)
-        const [duplicate] = await db.query(
-            'SELECT id FROM daily_prices WHERE branch_id = ? AND effective_date = ? AND id != ?', 
-            [branch_id, effective_date, id]
-        );
-        if (duplicate.length > 0) {
-            return res.json({ status: 'error', message: 'สาขานี้มีการตั้งราคาของวันนี้ไว้แล้ว' });
-        }
-
-        const sell_price = sell_price_per_kg && sell_price_per_kg !== '' ? sell_price_per_kg : null;
 
         await db.query(`
             UPDATE daily_prices 
             SET branch_id = ?, effective_date = ?, buy_price_per_kg = ?, sell_price_per_kg = ?
             WHERE id = ?
-        `, [branch_id, effective_date, buy_price_per_kg, sell_price, id]);
+        `, [branch_id, effective_date, buy_price_per_kg, sell_price_per_kg || null, id]);
 
         res.json({ status: 'success', message: 'อัปเดตราคาสำเร็จ!' });
     } catch (error) {
-        console.error("Update Price Error:", error);
-        res.status(500).json({ status: 'error', message: 'อัปเดตไม่สำเร็จ กรุณาตรวจสอบข้อมูล' });
+        res.status(500).json({ status: 'error', message: 'อัปเดตไม่สำเร็จ' });
     }
 };
 

@@ -59,6 +59,14 @@ app.use(session({
     }
 }));
 
+// ใส่ไว้ใต้โค้ดตั้งค่า session (...)
+app.use((req, res, next) => {
+    // 🚀 โยนข้อมูล user ใน session เข้า res.locals
+    // ทำให้ไฟล์ EJS ทุกไฟล์ สามารถเรียกใช้ตัวแปร <%= user.fullname %> ได้เลย
+    res.locals.user = req.session.user || null; 
+    next();
+});
+
 app.use((req, res, next) => {
     // แอบแนบข้อมูล user ไปให้เผื่อใช้แสดงชื่อมุมขวาบน
     res.locals.user = req.session ? req.session.user : null;
@@ -215,11 +223,11 @@ appRouter.post('/api/parasales_list/cancel/:id', requireAuth, parasalesControlle
 // 1. หน้า View (ต้องล็อคอิน + โหลดเมนู + เช็คสิทธิ์)
 appRouter.get('/customers', requireAuth, loadMenus, checkPermission, customerController.customerPage);
 
-// 2. API สำหรับโหลดและจัดการข้อมูล (แค่ล็อคอินก็พอ ไม่ต้องเช็คสิทธิ์ระดับเมนู เพราะหน้าบ้านโดนบล็อกไว้แล้ว)
-appRouter.get('/api/customers', requireAuth, customerController.getCustomers);
-appRouter.post('/api/customers/add', requireAuth, customerController.addCustomer);
-appRouter.post('/api/customers/update/:id', requireAuth, customerController.updateCustomer);
-appRouter.post('/api/customers/delete/:id', requireAuth, customerController.deleteCustomer);
+// 2. API (🚀 ต้องเติม checkPermission ตรงกลางด้วยนะครับ!)
+appRouter.get('/api/customers', requireAuth, checkPermission, customerController.getCustomers);
+appRouter.post('/api/customers/add', requireAuth, checkPermission, customerController.addCustomer);
+appRouter.post('/api/customers/update/:id', requireAuth, checkPermission, customerController.updateCustomer);
+appRouter.post('/api/customers/delete/:id', requireAuth, checkPermission, customerController.deleteCustomer);
 
 // ==========================================
 // 🟢 ระบบจัดการสาขา (Branches)

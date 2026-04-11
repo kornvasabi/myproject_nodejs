@@ -47,14 +47,23 @@
                     <input type="hidden" id="customerId" name="id"> <div class="form-group">
                         <div class="form-group">
                             <label>สาขาประจำ <span class="text-danger">*</span></label>
-                            <select class="form-control" id="formBranchId" name="branch_id" required>
-                                <option value="">-- เลือกสาขา --</option>
+                            
+                            <select class="form-control" id="formBranchId" name="branch_id" required 
+                                <%= typeof accessLevel !== 'undefined' && accessLevel === 3 ? 'readonly style="pointer-events: none; background-color: #eaecf4;"' : '' %>>
+                                
+                                <% if (typeof accessLevel !== 'undefined' && accessLevel !== 3) { %>
+                                    <option value="">-- เลือกสาขา --</option>
+                                <% } %>
+
                                 <% if (typeof branches !== 'undefined') { %>
                                     <% branches.forEach(function(b) { %>
-                                        <option value="<%= b.id %>"><%= b.branch_name %></option>
+                                        <option value="<%= b.id %>" <%= typeof accessLevel !== 'undefined' && accessLevel === 3 ? 'selected' : '' %> >
+                                            <%= b.branch_name %>
+                                        </option>
                                     <% }); %>
                                 <% } %>
                             </select>
+                            
                         </div>
 
                         <label>ชื่อ-นามสกุล <span class="text-danger">*</span></label>
@@ -178,7 +187,7 @@ $(document).ready(function() {
         e.preventDefault();
         
         let id = $('#customerId').val();
-        let url = id ? '/myproject_nodejs/api/customers/update/' + id : '/api/customers/add';
+        let url = id ? '/myproject_nodejs/api/customers/update/' + id : '/myproject_nodejs/api/customers/add';
         let formData = $(this).serialize();
 
         $.post(url, formData, function(response) {

@@ -14,7 +14,7 @@ const login = async (req, res) => {
         const sql = `
             SELECT 
 				u.id ,u.username ,u.password,u.fullname ,u.group_id ,ug.group_name ,d.dept_name
-				,br.id as branch_id
+				,br.id as branch_id ,br.branch_name
 			FROM users u
 			LEFT JOIN user_groups ug ON ug.id = u.group_id
 			LEFT JOIN departments d ON d.id = u.dept_id
@@ -43,7 +43,8 @@ const login = async (req, res) => {
                     fullname: user.fullname,
                     group_name: user.group_name,
                     dept_name: user.dept_name,
-					branch_id: user.branch_id
+					branch_id: user.branch_id,
+					branch_name: user.branch_name
                 };
 
                 // สั่ง Redirect ไปหน้า Dashboard 

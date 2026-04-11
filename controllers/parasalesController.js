@@ -6,8 +6,8 @@ const db = require('../config/db_para'); // ปรับ path ให้ตรง
 exports.getParasalesList = async (req, res) => {
     try {
         // จำลองว่าคุณกรล็อกอินของลานที่ 1 (ถ้ามีระบบ Session เต็มรูปแบบ ค่อยเปลี่ยนเป็น req.session.user.branch_id)
-        const currentBranchId = 1; 
-
+        // const currentBranchId = 1; 
+		const currentBranchId = req.session.user.branch_id
         // 1.1 ดึงราคารับซื้อล่าสุดของวันนี้
         const [prices] = await db.query(`
             SELECT buy_price_per_kg FROM daily_prices 

@@ -51,55 +51,44 @@ const showUserList = async (req, res) => {
 
 // ... โค้ด showUserList เดิม ...
 
-// 🟢 ฟังก์ชันสำหรับรับข้อมูลและ Insert ลง MariaDB
+// 🟢 1. ฟังก์ชัน addUser (ตอนเพิ่มผู้ใช้ใหม่)
 const addUser = async (req, res) => {
     try {
-        // แกะกล่องข้อมูลที่ AJAX ส่งมา (ชื่อตัวแปรต้องตรงกับ name ในฟอร์ม)
-        const { username, password, fullname, group_id, branch_id, dept_id } = req.body;
+        // 🚀 รับค่า accessible_branches เข้ามาเพิ่ม (มันจะมาเป็น Array หรือ String ขึ้นอยู่กับว่าเลือกกี่อัน)
+        const { username, password, fullname, group_id, branch_id, dept_id, accessible_branches } = req.body;
 
-        // ด่านตรวจ 1: เช็คค่าว่างที่จำเป็น (Backend Validation)
         if (!username || !password || !fullname) {
             return res.json({ status: 'error', message: 'กรุณากรอก Username, Password และชื่อ-นามสกุลให้ครบถ้วนครับ' });
         }
 
-        // 💡 ทริคจัดการ Foreign Key: ถ้าไม่ได้เลือก Dropdown มันจะส่งค่าว่าง ('') มา 
-        // เราต้องแปลงให้เป็น null ไม่งั้น MariaDB จะด่าว่า Foreign Key fail ครับ
         const g_id = group_id ? group_id : null;
         const b_id = branch_id ? branch_id : null;
         const d_id = dept_id ? dept_id : null;
-		
-		// สร้างเกลือ (Salt) มาคลุกเคล้าให้รหัสผ่านเดายากขึ้น (ระดับความซับซ้อน = 10)
+        
         const salt = await bcrypt.genSalt(10);
-        // เอา Password ดิบๆ มาสับรวมกับเกลือ จะได้ตัวอักษรยึกยือยาวๆ
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // คำสั่ง SQL Insert (รหัสผ่านเราบันทึกตรงๆ ไปก่อน ค่อยมาทำระบบเข้ารหัส Hash ทีหลังได้ครับ)
-        const sqlInsert = `
-            INSERT INTO users (username, password, fullname, group_id, branch_id, dept_id) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        `;
-        
-        // 🟢 1. รับค่าผลลัพธ์การ Insert เพื่อเอา ID ใหม่ล่าสุดมาใช้
+        const sqlInsert = `INSERT INTO users (username, password, fullname, group_id, branch_id, dept_id) VALUES (?, ?, ?, ?, ?, ?)`;
         const [result] = await db.query(sqlInsert, [username, hashedPassword, fullname, g_id, b_id, d_id]);
+        
+        const newUserId = result.insertId;
 
-        // 🟢 2. วิ่งไปดึงข้อมูล User คนใหม่ พร้อม JOIN ชื่อกลุ่ม/สาขา/แผนก เพื่อส่งกลับไปแสดงผล
-        const sqlNewUser = `
-            SELECT u.id, u.username, u.fullname, u.force_logout, u.last_activity,
-                   g.group_name, b.branch_name, d.dept_name
-            FROM users u
-            LEFT JOIN user_groups g ON u.group_id = g.id
-            LEFT JOIN branches b ON u.branch_id = b.id
-            LEFT JOIN departments d ON u.dept_id = d.id
-            WHERE u.id = ?
-        `;
-        const [newUser] = await db.query(sqlNewUser, [result.insertId]);
+        // ==========================================
+        // 🚀 1.1 นำข้อมูลสาขาที่เข้าถึงได้ ไป Insert ลงตาราง user_branches
+        // ==========================================
+        if (accessible_branches) {
+            // แปลงให้อยู่ในรูป Array เสมอ (เผื่อเขาเลือกมาแค่อันเดียวมันจะส่งมาเป็น String)
+            let branchesArray = Array.isArray(accessible_branches) ? accessible_branches : [accessible_branches];
+            
+            for (let acc_b_id of branchesArray) {
+                await db.query("INSERT INTO user_branches (user_id, branch_id) VALUES (?, ?)", [newUserId, acc_b_id]);
+            }
+        }
 
-        // 🟢 3. แนบก้อนข้อมูล data: newUser[0] กลับไปให้ AJAX ด้วย
-        res.json({ 
-            status: 'success', 
-            message: 'เพิ่มผู้ใช้งานใหม่เรียบร้อยแล้ว!',
-            data: newUser[0] 
-        });
+        const sqlNewUser = `SELECT u.*, g.group_name, b.branch_name, d.dept_name FROM users u LEFT JOIN user_groups g ON u.group_id = g.id LEFT JOIN branches b ON u.branch_id = b.id LEFT JOIN departments d ON u.dept_id = d.id WHERE u.id = ?`;
+        const [newUser] = await db.query(sqlNewUser, [newUserId]);
+
+        res.json({ status: 'success', message: 'เพิ่มผู้ใช้งานและกำหนดสิทธิ์สาขาเรียบร้อยแล้ว!', data: newUser[0] });
 
     } catch (error) {
         console.error("Add User Error:", error);
@@ -107,19 +96,22 @@ const addUser = async (req, res) => {
     }
 };
 
-// ... โค้ด addUser เดิม ...
-
-// ==========================================
-// 🟢 1. API ดึงข้อมูลเดิมมาโชว์ในฟอร์มแก้ไข
-// ==========================================
+// 🟢 2. ฟังก์ชัน getUser (ตอนโหลดข้อมูลขึ้นฟอร์มแก้ไข)
 const getUser = async (req, res) => {
     try {
-        const userId = req.params.id; // รับค่า ID ที่ส่งมากับ URL
+        const userId = req.params.id; 
         const sql = "SELECT * FROM users WHERE id = ?";
         const [users] = await db.query(sql, [userId]);
 
         if (users.length > 0) {
-            res.json({ status: 'success', data: users[0] });
+            // ==========================================
+            // 🚀 2.1 วิ่งไปดึงข้อมูลสาขาที่ Map ไว้ ส่งกลับไปด้วย
+            // ==========================================
+            const [mapped] = await db.query("SELECT branch_id FROM user_branches WHERE user_id = ?", [userId]);
+            let mappedBranches = mapped.map(m => m.branch_id); // แปลง Object ให้กลายเป็น Array เช่น [1, 2, 4]
+
+            // ส่งข้อมูลกลับไป 2 ก้อน (data คือข้อมูลหลัก, mapped_branches คือสิทธิ์)
+            res.json({ status: 'success', data: users[0], mapped_branches: mappedBranches });
         } else {
             res.json({ status: 'error', message: 'ไม่พบข้อมูลผู้ใช้งานในระบบ' });
         }
@@ -129,12 +121,10 @@ const getUser = async (req, res) => {
     }
 };
 
-// ==========================================
-// 🟢 2. API รับข้อมูลใหม่ไปอัปเดตทับใน MariaDB
-// ==========================================
+// 🟢 3. ฟังก์ชัน updateUser (ตอนกดอัปเดต)
 const updateUser = async (req, res) => {
     try {
-        const { id, password, fullname, group_id, branch_id, dept_id, force_logout } = req.body;
+        const { id, password, fullname, group_id, branch_id, dept_id, force_logout, accessible_branches } = req.body;
 
         const g_id = group_id ? group_id : null;
         const b_id = branch_id ? branch_id : null;
@@ -143,36 +133,33 @@ const updateUser = async (req, res) => {
         let sqlUpdate;
         let queryParams;
 
-        // 💡 ลอจิกสำคัญ: เช็คว่ามีการพิมพ์รหัสผ่านใหม่มาไหม?
         if (password) {
-            // ถ้าพิมพ์มา แปลว่า "ขอเปลี่ยนรหัสผ่านด้วย" -> ต้อง Hash รหัสใหม่ก่อน
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
-            
             sqlUpdate = `UPDATE users SET password = ?, fullname = ?, group_id = ?, branch_id = ?, dept_id = ?, force_logout = ? WHERE id = ?`;
             queryParams = [hashedPassword, fullname, g_id, b_id, d_id, force_logout, id];
         } else {
-            // ถ้าว่างเปล่า แปลว่า "ใช้รหัสผ่านเดิม" -> ข้ามคอลัมน์ password ไปเลย
             sqlUpdate = `UPDATE users SET fullname = ?, group_id = ?, branch_id = ?, dept_id = ?, force_logout = ? WHERE id = ?`;
             queryParams = [fullname, g_id, b_id, d_id, force_logout, id];
         }
-
-        // สั่งอัปเดตข้อมูล
         await db.query(sqlUpdate, queryParams);
 
-        // 🚀 ดึงข้อมูลที่เพิ่งอัปเดตเสร็จ พร้อมชื่อกลุ่ม/สาขา/แผนก ส่งกลับไปให้หน้าเว็บวาดตารางใหม่
-        const sqlUpdatedUser = `
-            SELECT u.id, u.username, u.fullname, u.force_logout, u.last_activity,
-                   g.group_name, b.branch_name, d.dept_name
-            FROM users u
-            LEFT JOIN user_groups g ON u.group_id = g.id
-            LEFT JOIN branches b ON u.branch_id = b.id
-            LEFT JOIN departments d ON u.dept_id = d.id
-            WHERE u.id = ?
-        `;
+        // ==========================================
+        // 🚀 3.1 ลบสิทธิ์เก่าทิ้งให้หมด แล้ว Insert สิทธิ์ใหม่เข้าไปแทน
+        // ==========================================
+        await db.query("DELETE FROM user_branches WHERE user_id = ?", [id]);
+        
+        if (accessible_branches) {
+            let branchesArray = Array.isArray(accessible_branches) ? accessible_branches : [accessible_branches];
+            for (let acc_b_id of branchesArray) {
+                await db.query("INSERT INTO user_branches (user_id, branch_id) VALUES (?, ?)", [id, acc_b_id]);
+            }
+        }
+
+        const sqlUpdatedUser = `SELECT u.*, g.group_name, b.branch_name, d.dept_name FROM users u LEFT JOIN user_groups g ON u.group_id = g.id LEFT JOIN branches b ON u.branch_id = b.id LEFT JOIN departments d ON u.dept_id = d.id WHERE u.id = ?`;
         const [updatedUser] = await db.query(sqlUpdatedUser, [id]);
 
-        res.json({ status: 'success', message: 'อัปเดตข้อมูลเรียบร้อยแล้ว!', data: updatedUser[0] });
+        res.json({ status: 'success', message: 'อัปเดตข้อมูลและสิทธิ์สาขาเรียบร้อยแล้ว!', data: updatedUser[0] });
 
     } catch (error) {
         console.error("Update User Error:", error);

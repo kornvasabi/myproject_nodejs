@@ -127,6 +127,16 @@
 									<% }); %>
 								</select>
 							</div>
+                            
+                            <div class="col-md-12 form-group mt-2">
+                                <label class="font-weight-bold text-info"><i class="fas fa-map-marked-alt"></i> สาขารองที่เข้าถึงได้ (สำหรับผู้จัดการ)</label>
+                                <select class="form-control select2-multiple" name="accessible_branches" multiple="multiple" style="width: 100%;">
+                                    <% branches.forEach(function(b) { %>
+                                        <option value="<%= b.id %>"><%= b.branch_code %> : <%= b.branch_name %></option>
+                                    <% }); %>
+                                </select>
+                            </div>
+
 							<div class="col-md-4 form-group">
 								<label><%= __('form.department') %></label>
 								<select class="form-control" name="dept_id">
@@ -191,6 +201,14 @@
                                     <% branches.forEach(function(b) { %> <option value="<%= b.id %>"><%= b.branch_name %></option> <% }); %>
                                 </select>
                             </div>
+                            <div class="col-md-12 form-group mt-2">
+                                <label class="font-weight-bold text-info"><i class="fas fa-map-marked-alt"></i> สาขารองที่เข้าถึงได้ (สำหรับผู้จัดการ)</label>
+                                <select class="form-control select2-multiple" name="accessible_branches" id="edit_accessible_branches" multiple="multiple" style="width: 100%;">
+                                    <% branches.forEach(function(b) { %>
+                                        <option value="<%= b.id %>"><%= b.branch_code %> : <%= b.branch_name %></option>
+                                    <% }); %>
+                                </select>
+                            </div>
                             <div class="col-md-3 form-group">
                                 <label>แผนก</label>
                                 <select class="form-control" name="dept_id" id="edit_dept_id">
@@ -216,7 +234,37 @@
         </div>
     </div>
 <%- include('./layouts/footer') %>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
+<style>
+    .select2-container .select2-selection--multiple {
+        min-height: 38px;
+        border: 1px solid #d1d3e2;
+        border-radius: 0.35rem;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #4e73df;
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        margin-top: 6px;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: white;
+        margin-right: 5px;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+        color: #ffcccc;
+        background: transparent;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: white;
+        margin-right: 5px;
+        border-right: none; /* 🟢 เพิ่มบรรทัดนี้เพื่อซ่อนเส้นขีดคั่น */
+        padding-right: 5px; /* 🟢 เพิ่มระยะห่างนิดหน่อยให้สวยงาม */
+    }
+</style>
 <script>
     // 🟢 1. จับ EJS ใส่ในเครื่องหมายคำพูด (VS Code จะมองเป็น String และเลิกฟ้อง Error)
     const strEdit = '<%= (permission && permission.can_edit === 1) ? "true" : "false" %>';
@@ -233,6 +281,33 @@
     
     $(document).ready(function() {
         AppTools.initDataTable('#usersTable');
+        // 🟢 ปลุกชีพ Select2 ให้กล่อง Select ที่มีคลาส .select2-multiple
+        
+        // ==========================================
+        // 🟢 1. ปลุกชีพ Select2 แยกแต่ละ Modal (แก้ปัญหาพิมพ์ค้นหาไม่ได้)
+        // ==========================================
+        $('#addUserModal .select2-multiple').select2({
+            placeholder: "คลิกเพื่อค้นหา หรือเลือกสาขารอง...",
+            allowClear: true,
+            dropdownParent: $('#addUserModal')
+        });
+
+        $('#editUserModal .select2-multiple').select2({
+            placeholder: "คลิกเพื่อค้นหา หรือเลือกสาขารอง...",
+            allowClear: true,
+            dropdownParent: $('#editUserModal')
+        });
+
+        // ==========================================
+        // 🟢 2. เคลียร์ค่า Select2 ตอนปิดหน้าต่าง Modal (ป้องกันข้อมูลค้าง)
+        // ==========================================
+        $('#addUserModal').on('hidden.bs.modal', function () {
+            $(this).find('.select2-multiple').val(null).trigger('change');
+        });
+        
+        $('#editUserModal').on('hidden.bs.modal', function () {
+            $(this).find('.select2-multiple').val(null).trigger('change');
+        });
 
         // 🟢 ดักจับการกดปุ่มบันทึกในฟอร์ม
         $('#formAddUser').on('submit', function(e) {
@@ -328,31 +403,39 @@
         // 🟢 สร้างตัวแปรจำว่าคลิกแก้ไขแถวไหน
         let currentRow;
 
-        // 🟢 1. ดักจับตอนคลิกปุ่ม "แก้ไข"
+        // 🟢 ดักจับตอนคลิกปุ่ม "แก้ไข"
         $('#usersTable').on('click', '.btn-edit', function() {
-            currentRow = $(this).closest('tr'); // จำแถวที่โดนคลิกไว้
-            let userId = $(this).data('id');    // ดึง ID ออกมาจากปุ่ม
+            currentRow = $(this).closest('tr');
+            let userId = $(this).data('id');
 
-            // ยิงไปขอข้อมูลคนนี้จาก Node.js
             $.ajax({
                 url: '/myproject_nodejs/api/get_user/' + userId,
                 type: 'GET',
                 success: function(res) {
                     if (res.status === 'success') {
                         let u = res.data;
-                        // เอาข้อมูลมาหยอดใส่ช่องต่างๆ ใน Modal
+                        
+                        // หยอดข้อมูลทั่วไป
                         $('#edit_id').val(u.id);
                         $('#edit_username').val(u.username);
                         $('#edit_fullname').val(u.fullname);
                         $('#edit_group_id').val(u.group_id);
-                        $('#edit_branch_id').val(u.branch_id);
+                        $('#edit_branch_id').val(u.branch_id); // 🟢 อันนี้คือสาขาหลัก
                         $('#edit_dept_id').val(u.dept_id);
                         $('#edit_force_logout').val(u.force_logout);
                         
-                        // เคลียร์ช่องรหัสผ่านให้ว่างเสมอ
+                        // ==========================================
+                        // 🚀 หยอดข้อมูลสาขารองใส่ Select2 
+                        // ==========================================
+                        if (res.mapped_branches && res.mapped_branches.length > 0) {
+                            // ยัด Array [1, 2] เข้าไป แล้วสั่งให้อัปเดต UI ด้วย trigger('change')
+                            $('#edit_accessible_branches').val(res.mapped_branches).trigger('change');
+                        } else {
+                            // ถ้าไม่มีสิทธิ์เลย ให้เคลียร์ค่าออก
+                            $('#edit_accessible_branches').val(null).trigger('change');
+                        }
+
                         $('#formEditUser input[name="password"]').val(''); 
-                        
-                        // เปิด Modal ขึ้นมา
                         $('#editUserModal').modal('show');
                     } else {
                         AppTools.showModal('ผิดพลาด', res.message, 'error');

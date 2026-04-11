@@ -52,14 +52,23 @@
                         </div>
                         <div class="col-md-6 form-group">
                             <label>สาขา <span class="text-danger">*</span></label>
-                            <select class="form-control" id="formBranchId" name="branch_id" required>
-                                <option value="">-- เลือกสาขา --</option>
+                            
+                            <select class="form-control" id="formBranchId" name="branch_id" required 
+                                <%= typeof accessLevel !== 'undefined' && accessLevel === 3 ? 'readonly style="pointer-events: none; background-color: #eaecf4;"' : '' %>>
+                                
+                                <% if (typeof accessLevel !== 'undefined' && accessLevel !== 3) { %>
+                                    <option value="">-- เลือกสาขา --</option>
+                                <% } %>
+
                                 <% if (typeof branches !== 'undefined') { %>
                                     <% branches.forEach(function(b) { %>
-                                        <option value="<%= b.id %>"><%= b.branch_name %></option>
+                                        <option value="<%= b.id %>" <%= typeof accessLevel !== 'undefined' && accessLevel === 3 ? 'selected' : '' %>>
+                                            <%= b.branch_name %>
+                                        </option>
                                     <% }); %>
                                 <% } %>
                             </select>
+                            
                         </div>
                     </div>
                     
@@ -124,7 +133,7 @@ $(document).ready(function() {
 
     loadPrices(); 
 
-    // เปิด Modal เพิ่มข้อมูล (เซ็ตค่าวันที่เป็น "วันนี้" อัตโนมัติ)
+    // เปิด Modal เพิ่มข้อมูล
     $('#btnAddPrice').click(function() {
         $('#priceForm')[0].reset();
         $('#priceId').val('');
@@ -140,7 +149,7 @@ $(document).ready(function() {
         let data = JSON.parse(decodeURIComponent($(this).data('info')));
         
         $('#priceId').val(data.id);
-        $('#effectiveDate').val(data.raw_date); // ใช้ raw_date (YYYY-MM-DD) ยัดเข้า input type="date"
+        $('#effectiveDate').val(data.raw_date); 
         $('#formBranchId').val(data.branch_id);
         $('#buyPrice').val(data.buy_price_per_kg);
         $('#sellPrice').val(data.sell_price_per_kg);
@@ -165,10 +174,12 @@ $(document).ready(function() {
             } else {
                 Swal.fire('ผิดพลาด', response.message, 'warning');
             }
+        }).fail(function(xhr) {
+            Swal.fire('การเชื่อมต่อขัดข้อง', 'ไม่สามารถส่งข้อมูลไปที่เซิร์ฟเวอร์ได้', 'error');
         });
     });
 
-    // แก้ไขสคริปต์ในส่วน $(document).on('click', '.btn-delete', ...)
+    // ยกเลิกราคา
     $(document).on('click', '.btn-delete', function() {
         let id = $(this).data('id');
         let date = $(this).data('date');
@@ -187,10 +198,12 @@ $(document).ready(function() {
                 $.post('/myproject_nodejs/api/daily_prices/delete/' + id, function(response) {
                     if(response.status === 'success') {
                         Swal.fire('ยกเลิกสำเร็จ!', response.message, 'success');
-                        loadPrices(); // รีโหลดตาราง (รายการที่ยกเลิกจะหายไปจากหน้าจอเพราะ filter ไว้)
+                        loadPrices(); 
                     } else {
                         Swal.fire('ผิดพลาด!', response.message, 'error');
                     }
+                }).fail(function() {
+                    Swal.fire('การเชื่อมต่อขัดข้อง', 'ไม่สามารถส่งข้อมูลไปที่เซิร์ฟเวอร์ได้', 'error');
                 });
             }
         });
