@@ -207,15 +207,15 @@ appRouter.post('/api/import/excel', requireAuth, upload.single('price_file'), im
 // 1. เปิดหน้าจอ (ดักเช็คสิทธิ์และโหลดเมนูเหมือนหน้าอื่นๆ)
 appRouter.get('/parasales_list', requireAuth, loadMenus, checkPermission, parasalesController.getParasalesList);
 
-appRouter.post('/api/parasales_list/add', requireAuth, parasalesController.addTransaction);
+appRouter.post('/api/parasales_list/add', requireAuth, checkPermission, parasalesController.addTransaction);
 
-appRouter.get('/api/parasales_list/history/:id', requireAuth, parasalesController.getCustomerHistory);
+appRouter.get('/api/parasales_list/history/:id', requireAuth, checkPermission, parasalesController.getCustomerHistory);
 
 // 🟢 ดึงรายละเอียดรายการรับซื้อ 1 รายการ
-appRouter.get('/api/parasales_list/detail/:id', requireAuth, parasalesController.getTransactionDetail);
+appRouter.get('/api/parasales_list/detail/:id', requireAuth, checkPermission, parasalesController.getTransactionDetail);
 
 // 🟢 ยกเลิกรายการรับซื้อ
-appRouter.post('/api/parasales_list/cancel/:id', requireAuth, parasalesController.cancelTransaction);
+appRouter.post('/api/parasales_list/cancel/:id', requireAuth, checkPermission, parasalesController.cancelTransaction);
 
 // ==========================================
 // 🟢 ระบบจัดการลูกค้า (Customer)

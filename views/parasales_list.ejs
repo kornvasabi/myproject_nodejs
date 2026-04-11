@@ -20,16 +20,22 @@
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover" id="dataTableDesktop" width="100%" cellspacing="0">
                         <thead class="thead-light text-center">
-                            <tr>
-                                <th>เลขที่บิล</th><th>วัน/เวลา</th><th>ชื่อลูกค้า</th>
-                                <th>น้ำหนักสุทธิ</th><th>DRC</th><th>ยอดเงิน</th><th>สถานะ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% if(transactions.length > 0) { %>
-                                <% transactions.forEach(function(tx) { %>
-                                    <tr class="view-detail-trigger" data-id="<%= tx.id %>" style="cursor: pointer;" title="คลิกเพื่อดูรายละเอียด">
-                                        <td class="text-center"><%= tx.receipt_no %></td>
+							<tr>
+								<th>เลขที่บิล</th>
+								<th>สาขา</th> <th>วัน/เวลา</th>
+								<th>ชื่อลูกค้า</th>
+								<th>น้ำหนักสุทธิ</th>
+								<th>DRC</th>
+								<th>ยอดเงิน</th>
+								<th>สถานะ</th>
+							</tr>
+						</thead>
+						<tbody>
+							<% if(transactions.length > 0) { %>
+								<% transactions.forEach(function(tx) { %>
+									<tr class="view-detail-trigger" data-id="<%= tx.id %>" style="cursor: pointer;" title="คลิกเพื่อดูรายละเอียด">
+										<td class="text-center"><%= tx.receipt_no %></td>
+										<td class="text-center text-info"><%= tx.branch_name %></td>
                                         <td class="text-center"><%= tx.formatted_date %></td>
                                         <td><%= tx.customer_name %></td>
                                         <td class="text-right"><%= parseFloat(tx.net_weight).toFixed(2) %> กก.</td>
@@ -129,19 +135,28 @@
                     <div class="tab-content">
                         
                         <div class="tab-pane fade show active" id="step1">
-                            <div class="row justify-content-center">
-                                <div class="col-md-8 mb-3">
-                                    <label>ค้นหา / เลือกลูกค้า <span class="text-danger">*</span></label>
-                                    <select name="customer_id" class="form-control" required>
-                                        <option value="">-- กรุณาเลือกลูกค้า --</option>
-                                        <% customers.forEach(function(c) { %>
-                                            <option value="<%= c.id %>"><%= c.customer_code %> : <%= c.customer_name %></option>
-                                        <% }); %>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="text-right mt-3"><button type="button" class="btn btn-primary px-4 btn-next">ถัดไป <i class="fas fa-arrow-right ml-1"></i></button></div>
-                        </div>
+							<div class="row justify-content-center">
+								<div class="col-md-8 mb-3">
+									<label>สาขาที่รับซื้อ <span class="text-danger">*</span></label>
+									<select name="branch_id" id="selectBranch" class="form-control" required 
+										<%= accessLevel === 3 ? 'readonly style="pointer-events: none; background-color: #eaecf4;"' : '' %>>
+										<% branches.forEach(function(b) { %>
+											<option value="<%= b.id %>" <%= b.id == lastUsedBranchId ? 'selected' : '' %>>
+												<%= b.branch_name %>
+											</option>
+										<% }); %>
+									</select>
+								</div>
+
+								<div class="col-md-8 mb-3">
+									<label>ค้นหา / เลือกลูกค้า <span class="text-danger">*</span></label>
+									<select name="customer_id" id="selectCustomer" class="form-control" required>
+										<option value="">-- กรุณาเลือกลูกค้า --</option>
+									</select>
+								</div>
+							</div>
+							<div class="text-right mt-3"><button type="button" class="btn btn-primary px-4 btn-next">ถัดไป <i class="fas fa-arrow-right ml-1"></i></button></div>
+						</div>
 
                         <div class="tab-pane fade" id="step2">
 							<div class="row mb-3">
@@ -612,7 +627,7 @@
 						let newRowHtml = `
 							<tr class="view-detail-trigger" data-id="${response.data.id}" style="cursor: pointer; display: none;">
 								<td class="text-center">${response.data.receipt_no}</td>
-								<td class="text-center">${response.data.formatted_date}</td>
+								<td class="text-center text-info">${response.data.branch_name}</td> <td class="text-center">${response.data.formatted_date}</td>
 								<td>${response.data.customer_name}</td>
 								<td class="text-right">${parseFloat(response.data.net_weight).toFixed(2)} กก.</td>
 								<td class="text-right text-info">${parseFloat(response.data.drc_percent).toFixed(2)}%</td>
@@ -816,5 +831,33 @@
             }
         });
     });
+	// 🚀 ดึงข้อมูล JSON ที่ Node.js ส่งมา
+    const branchPrices = <%- branchPrices %>;
+    const allCustomers = <%- customersData %>;
+
+    // 🚀 เมื่อมีการเปลี่ยนสาขาใน Dropdown
+    $('#selectBranch').change(function() {
+        let bId = $(this).val();
+        
+        // 1. อัปเดตราคารับซื้อแบบ Real-time
+        let newPrice = branchPrices[bId] || 0;
+        $('#dailyPrice').val(newPrice);
+        
+        // อัปเดตราคาที่แสดงในขั้นตอนที่ 3
+        $('.summary-box .text-primary').text(parseFloat(newPrice).toFixed(2)); 
+        $('.calc-trigger').first().trigger('input'); // สั่งคำนวณเงินใหม่ทันที
+
+        // 2. กรองรายชื่อลูกค้า ให้โชว์เฉพาะสาขาที่เลือก
+        let custSelect = $('#selectCustomer');
+        custSelect.empty().append('<option value="">-- กรุณาเลือกลูกค้า --</option>');
+        
+        let filteredCusts = allCustomers.filter(c => c.branch_id == bId);
+        filteredCusts.forEach(c => {
+            custSelect.append(`<option value="${c.id}">${c.customer_code} : ${c.customer_name}</option>`);
+        });
+    });
+
+    // ทริกเกอร์ให้มันทำงานตั้งแต่เปิดหน้าเว็บครั้งแรก
+    $('#selectBranch').trigger('change');
 });
 </script>
