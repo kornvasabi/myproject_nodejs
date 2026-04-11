@@ -251,8 +251,8 @@ appRouter.post('/api/daily_prices/delete/:id', checkPermission, requireAuth, pri
 // 🟢 ระบบจัดการโรงงานปลายทาง (Factories)
 // ==========================================
 appRouter.get('/factories', requireAuth, loadMenus, checkPermission, factoryController.factoryPage);
-appRouter.get('/api/factories', requireAuth, factoryController.getFactories);
-appRouter.post('/api/factories/add', requireAuth, factoryController.addFactory);
+appRouter.get('/api/factories', requireAuth, checkPermission, factoryController.getFactories);
+appRouter.post('/api/factories/add', requireAuth, checkPermission, factoryController.addFactory);
 appRouter.post('/api/factories/update/:id', requireAuth, factoryController.updateFactory);
 appRouter.post('/api/factories/delete/:id', requireAuth, factoryController.deleteFactory);
 

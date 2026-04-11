@@ -10,19 +10,27 @@ exports.outboundPage = async (req, res) => {
         // ดึงข้อมูลสาขา และ โรงงาน ที่ยังใช้งานอยู่ มาแสดงใน Dropdown
         let branchSql = 'SELECT id, branch_name FROM branches WHERE is_active = 1';
         let branchParams = [];
+
+        let factoriesSql = 'SELECT id, factory_name, branch_id FROM factories WHERE is_active = 1';
+        let factoriesParams = [];
         
         // 🚀 กรองรายชื่อสาขาใน Dropdown (ทั้งในหน้าค้นหาและใน Modal)
         if (accessLevel === 3) {
             branchSql += ' AND id = ?';
+            factoriesSql += ' AND branch_id = ?';
+
             branchParams.push(userBranchId);
+            factoriesParams.push(userBranchId);
         } else if (accessLevel === 2) {
             branchSql += ' AND (id = ? OR id IN (SELECT branch_id FROM user_branches WHERE user_id = ?))';
+            factoriesSql += ' AND (branch_id = ? OR id IN (SELECT branch_id FROM user_branches WHERE user_id = ?))';
+            
             branchParams.push(userBranchId, userId);
+            factoriesParams.push(userBranchId, userId);
         }
 
         const [branches] = await db.query(branchSql, branchParams);
-        
-        const [factories] = await db.query('SELECT id, factory_name FROM factories WHERE is_active = 1');
+        const [factories] = await db.query(factoriesSql, factoriesParams);
         
         res.render('outbounds', { 
             title: 'ส่งน้ำยางเข้าโรงงาน', 

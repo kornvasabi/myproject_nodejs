@@ -47,24 +47,28 @@
                     <div class="row">
                         <div class="col-md-6 form-group">
                             <label>ออกจากลานสาขา <span class="text-danger">*</span></label>
-                            <select class="form-control" name="branch_id" required>
-                                <option value="">-- เลือกสาขา --</option>
+                            
+                            <select class="form-control" id="outboundBranch" name="branch_id" required
+                                <%= typeof accessLevel !== 'undefined' && accessLevel === 3 ? 'readonly style="pointer-events: none; background-color: #eaecf4;"' : '' %>>
+                                
+                                <% if (typeof accessLevel !== 'undefined' && accessLevel !== 3) { %>
+                                    <option value="">-- เลือกสาขา --</option>
+                                <% } %>
+
                                 <% if (typeof branches !== 'undefined') { %>
                                     <% branches.forEach(function(b) { %>
-                                        <option value="<%= b.id %>"><%= b.branch_name %></option>
+                                        <option value="<%= b.id %>" <%= typeof accessLevel !== 'undefined' && accessLevel === 3 ? 'selected' : '' %>>
+                                            <%= b.branch_name %>
+                                        </option>
                                     <% }); %>
                                 <% } %>
                             </select>
                         </div>
+                        
                         <div class="col-md-6 form-group">
                             <label>ไปส่งที่โรงงาน <span class="text-danger">*</span></label>
-                            <select class="form-control" name="factory_id" required>
-                                <option value="">-- เลือกโรงงาน --</option>
-                                <% if (typeof factories !== 'undefined') { %>
-                                    <% factories.forEach(function(f) { %>
-                                        <option value="<%= f.id %>"><%= f.factory_name %></option>
-                                    <% }); %>
-                                <% } %>
+                            <select class="form-control" id="outboundFactory" name="factory_id" required>
+                                <option value="">-- กรุณาเลือกสาขาก่อน --</option>
                             </select>
                         </div>
                     </div>
@@ -159,6 +163,42 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
+    // ==========================================
+    // 🚀 ระบบความฉลาด: กรองโรงงานตามสาขาที่เลือก
+    // ==========================================
+    // ดึงข้อมูลโรงงานทั้งหมดที่ Node.js ส่งมาให้ เก็บไว้ในตัวแปร JS
+    const allFactories = <%- JSON.stringify(typeof factories !== 'undefined' ? factories : []) %>;
+
+    $('#outboundBranch').on('change', function() {
+        let selectedBranch = $(this).val();
+        let factorySelect = $('#outboundFactory');
+        
+        // ล้างข้อมูลเดิมในช่องโรงงานออกให้หมด
+        factorySelect.empty();
+
+        if (!selectedBranch) {
+            factorySelect.append('<option value="">-- กรุณาเลือกสาขาก่อน --</option>');
+            return;
+        }
+
+        factorySelect.append('<option value="">-- เลือกโรงงาน --</option>');
+        
+        // 🟢 กรองเอาเฉพาะโรงงานที่ branch_id ตรงกับสาขาที่เลือก
+        let filteredFactories = allFactories.filter(f => f.branch_id == selectedBranch);
+        
+        filteredFactories.forEach(f => {
+            factorySelect.append(`<option value="${f.id}">${f.factory_name}</option>`);
+        });
+    });
+
+    // 🚀 สั่ง Trigger Change ตอนเปิด Modal เพิ่มข้อมูล
+    $('#btnAddOutbound').click(function() {
+        $('#createOutboundForm')[0].reset();
+        $('#createOutboundModal').modal('show');
+        
+        // สั่งให้ระบบเลือกโรงงานอัตโนมัติ ตามสาขาที่โชว์อยู่
+        $('#outboundBranch').trigger('change');
+    });
     
     // 🚀 1. โหลดข้อมูลลงตาราง
     function loadOutbounds() {
