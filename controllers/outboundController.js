@@ -3,8 +3,25 @@ const db = require('../config/db_para');
 // 🟢 1. เปิดหน้าจอจัดการส่งออก
 exports.outboundPage = async (req, res) => {
     try {
+        const userId = req.session.user.id;
+        const userBranchId = req.session.user.branch_id;
+        const accessLevel = req.currentPermission ? Number(req.currentPermission.access_level) : 3;
+
         // ดึงข้อมูลสาขา และ โรงงาน ที่ยังใช้งานอยู่ มาแสดงใน Dropdown
-        const [branches] = await db.query('SELECT id, branch_name FROM branches WHERE is_active = 1');
+        let branchSql = 'SELECT id, branch_name FROM branches WHERE is_active = 1';
+        let branchParams = [];
+        
+        // 🚀 กรองรายชื่อสาขาใน Dropdown (ทั้งในหน้าค้นหาและใน Modal)
+        if (accessLevel === 3) {
+            branchSql += ' AND id = ?';
+            branchParams.push(userBranchId);
+        } else if (accessLevel === 2) {
+            branchSql += ' AND (id = ? OR id IN (SELECT branch_id FROM user_branches WHERE user_id = ?))';
+            branchParams.push(userBranchId, userId);
+        }
+
+        const [branches] = await db.query(branchSql, branchParams);
+        
         const [factories] = await db.query('SELECT id, factory_name FROM factories WHERE is_active = 1');
         
         res.render('outbounds', { 
@@ -21,15 +38,39 @@ exports.outboundPage = async (req, res) => {
 // 🟢 2. ดึงข้อมูลรายการส่งออก (API)
 exports.getOutbounds = async (req, res) => {
     try {
-        const [outbounds] = await db.query(`
+        const userId = req.session.user.id;
+        const userBranchId = req.session.user.branch_id;
+        const accessLevel = req.currentPermission ? Number(req.currentPermission.access_level) : 3;
+
+        let sql = `
             SELECT o.*, 
                    DATE_FORMAT(o.delivery_datetime, '%d/%m/%Y %H:%i') AS formatted_date,
                    b.branch_name, f.factory_name
             FROM outbound_transactions o
             LEFT JOIN branches b ON o.branch_id = b.id
             LEFT JOIN factories f ON o.factory_id = f.id
-            ORDER BY o.id DESC
-        `);
+            where 1 = 1
+        `;
+
+        let params = [];
+
+        if (accessLevel === 3){
+            sql += ` and o.branch_id ? `;
+            params.push(userBranchId); 
+        }else if(accessLevel === 2){
+            sql += ` AND (o.branch_id = ? OR o.branch_id IN (SELECT branch_id FROM user_branches WHERE user_id = ?)) `;
+            params.push(userBranchId, userId);
+        }
+        
+        sql += `order by o.delivery_datetime desc, o.id desc`;
+
+        console.log("SQL:", sql);
+        console.log("accessLevel:", accessLevel);
+        console.log("userId:", userId);
+        console.log("userBranchId:", userBranchId);
+
+        const [outbounds] = await db.query(sql, params);
+
         res.json({ status: 'success', data: outbounds });
     } catch (error) {
         console.error("Get Outbounds Error:", error);

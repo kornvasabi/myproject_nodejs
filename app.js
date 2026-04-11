@@ -242,10 +242,10 @@ appRouter.post('/api/branches/delete/:id', requireAuth, branchController.deleteB
 // 🟢 ระบบกำหนดราคารับซื้อ (Daily Prices)
 // ==========================================
 appRouter.get('/daily_prices', requireAuth, loadMenus, checkPermission, priceController.pricePage);
-appRouter.get('/api/daily_prices', requireAuth, priceController.getPrices);
-appRouter.post('/api/daily_prices/add', requireAuth, priceController.addPrice);
-appRouter.post('/api/daily_prices/update/:id', requireAuth, priceController.updatePrice);
-appRouter.post('/api/daily_prices/delete/:id', requireAuth, priceController.deletePrice);
+appRouter.get('/api/daily_prices', requireAuth, checkPermission, priceController.getPrices);
+appRouter.post('/api/daily_prices/add', requireAuth, checkPermission, priceController.addPrice);
+appRouter.post('/api/daily_prices/update/:id', checkPermission, requireAuth, priceController.updatePrice);
+appRouter.post('/api/daily_prices/delete/:id', checkPermission, requireAuth, priceController.deletePrice);
 
 // ==========================================
 // 🟢 ระบบจัดการโรงงานปลายทาง (Factories)
@@ -260,8 +260,8 @@ appRouter.post('/api/factories/delete/:id', requireAuth, factoryController.delet
 // 🟢 ระบบส่งออกน้ำยาง (Outbounds)
 // ==========================================
 appRouter.get('/outbounds', requireAuth, loadMenus, checkPermission, outboundController.outboundPage);
-appRouter.get('/api/outbounds', requireAuth, outboundController.getOutbounds);
-appRouter.post('/api/outbounds/add', requireAuth, outboundController.addOutbound);
+appRouter.get('/api/outbounds', requireAuth, checkPermission, outboundController.getOutbounds);
+appRouter.post('/api/outbounds/add', requireAuth,checkPermission, outboundController.addOutbound);
 appRouter.post('/api/outbounds/close/:id', requireAuth, outboundController.closeOutbound);
 appRouter.post('/api/outbounds/cancel/:id', requireAuth, outboundController.cancelOutbound);
 

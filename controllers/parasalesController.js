@@ -194,11 +194,12 @@ exports.getTransactionDetail = async (req, res) => {
     try {
         const txId = req.params.id;
         const [details] = await db.query(`
-            SELECT it.*,
+            SELECT it.*,b.branch_name,
                    DATE_FORMAT(it.transaction_datetime, '%d/%m/%Y %H:%i') as formatted_date,
                    c.customer_name, c.customer_code,
                    u.fullname as staff_name
             FROM inbound_transactions it
+            LEFT JOIN branches b on it.branch_id = b.id
             LEFT JOIN customers c ON it.customer_id = c.id
             LEFT JOIN users u ON it.staff_id = u.id
             WHERE it.id = ?

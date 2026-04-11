@@ -27,7 +27,7 @@
 								<th>น้ำหนักสุทธิ</th>
 								<th>DRC</th>
 								<th>ยอดเงิน</th>
-								<th>สถานะ</th>
+								<th>สถานะจ่าย</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -44,6 +44,8 @@
                                         <td class="text-center">
                                             <% if(tx.payment_status === 'paid') { %>
                                                 <span class="badge badge-success">จ่ายแล้ว</span>
+                                            <% } else if(tx.payment_status === 'cancelled'){ %>
+                                                <span class="badge badge-danger">ยกเลิก</span>
                                             <% } else { %>
                                                 <span class="badge badge-warning text-dark">ค้างจ่าย</span>
                                             <% } %>
@@ -66,7 +68,7 @@
             <% if(transactions.length > 0) { %>
                 <% transactions.forEach(function(tx) { %>
                     <div class="col-12 col-md-6 mb-3 transaction-item">
-                        <div class="card <%= tx.payment_status === 'paid' ? 'border-left-success' : 'border-left-warning' %> shadow h-100 py-2 view-detail-trigger" data-id="<%= tx.id %>" style="cursor: pointer;">
+                        <div class="card <%= tx.payment_status === 'paid' ? 'border-left-success' : tx.payment_status === 'cancelled' ? 'border-left-danger' : 'border-left-warning' %> shadow h-100 py-2 view-detail-trigger" data-id="<%= tx.id %>" style="cursor: pointer;">
                             <div class="card-body py-2">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
@@ -86,6 +88,8 @@
                                     <div class="col-auto text-center pl-2">
                                         <% if(tx.payment_status === 'paid') { %>
                                             <span class="badge badge-success"><i class="fas fa-check"></i> จ่ายแล้ว</span>
+                                        <% } else if(tx.payment_status === 'cancelled'){ %>
+                                            <span class="badge badge-danger"><i class="fas fa-times"></i> ยกเลิก</span>
                                         <% } else { %>
                                             <span class="badge badge-warning text-dark"><i class="fas fa-clock"></i> ค้างจ่าย</span>
                                         <% } %>
@@ -288,6 +292,11 @@
                             <small class="text-muted">วันที่ทำรายการ</small><br>
                             <span class="h6 font-weight-bold text-dark" id="v-date"></span>
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted">สาขา</small><br>
+                        <span class="h5 font-weight-bold text-primary" id="v-branch"></span>
                     </div>
 
                     <div class="mb-3">
@@ -716,6 +725,7 @@
 					// เอาข้อมูลไปยัดใส่จุดต่างๆ ใน Modal
 					$('#v-receipt').text(data.receipt_no);
 					$('#v-date').text(data.formatted_date);
+                    $('#v-branch').text(data.branch_name);
 					$('#v-customer').text(data.customer_name);
 					
 					$('#v-gross').text(parseFloat(data.gross_weight).toFixed(2) + ' กก.');
