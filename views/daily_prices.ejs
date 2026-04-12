@@ -10,25 +10,33 @@
         </button>
     </div>
 
-    <div class="card shadow mb-4 border-left-success">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="priceTable" width="100%" cellspacing="0">
-                    <thead class="bg-light text-center">
-                        <tr>
-                            <th>วันที่ประกาศ</th>
-                            <th>สาขา</th>
-                            <th class="text-success">ราคาซื้อหน้าลาน (฿)</th>
-                            <th class="text-primary">ราคาส่งโรงงาน (฿)</th>
-                            <th>ผู้บันทึก</th>
-                            <th>จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="priceTableBody">
-                        </tbody>
-                </table>
+    <div class="d-none d-lg-block">
+        <div class="card shadow mb-4 border-left-success">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="priceTable" width="100%" cellspacing="0">
+                        <thead class="bg-light text-center">
+                            <tr>
+                                <th>วันที่ประกาศ</th>
+                                <th>สาขา</th>
+                                <th class="text-success">ราคาซื้อหน้าลาน (฿)</th>
+                                <th class="text-primary">ราคาส่งโรงงาน (฿)</th>
+                                <th>ผู้บันทึก</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="priceTableBody">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </div>
+    </div>
+
+    <div class="d-block d-lg-none">
+        <h6 class="font-weight-bold text-success mb-3"><i class="fas fa-list"></i> รายการราคาประกาศทั้งหมด</h6>
+        <div class="row" id="priceListMobile">
+            </div>
     </div>
 </div>
 
@@ -98,18 +106,27 @@
 <script>
 $(document).ready(function() {
     
+    // 🚀 ฟังก์ชันโหลดข้อมูลราคา
     function loadPrices() {
         $.get('/myproject_nodejs/api/daily_prices', function(response) {
             if (response.status === 'success') {
                 let rows = '';
+                let mobileCards = ''; // 🟢 ตัวแปรเก็บ HTML สำหรับมือถือ
+
                 response.data.forEach(p => {
                     let priceData = encodeURIComponent(JSON.stringify(p));
+                    let buyPriceText = parseFloat(p.buy_price_per_kg).toFixed(2);
+                    let sellPriceText = p.sell_price_per_kg ? parseFloat(p.sell_price_per_kg).toFixed(2) : '-';
+
+                    // =====================================
+                    // 💻 สำหรับ Desktop (Table)
+                    // =====================================
                     rows += `
                         <tr>
                             <td class="text-center font-weight-bold">${p.display_date}</td>
                             <td class="text-center"><span class="badge badge-info">${p.branch_name || 'ไม่ระบุ'}</span></td>
-                            <td class="text-right text-success font-weight-bold h6 mb-0">${parseFloat(p.buy_price_per_kg).toFixed(2)}</td>
-                            <td class="text-right text-primary">${p.sell_price_per_kg ? parseFloat(p.sell_price_per_kg).toFixed(2) : '-'}</td>
+                            <td class="text-right text-success font-weight-bold h6 mb-0">${buyPriceText}</td>
+                            <td class="text-right text-primary">${sellPriceText}</td>
                             <td class="text-center"><small class="text-muted">${p.created_by_name || 'System'}</small></td>
                             <td class="text-center" style="white-space: nowrap;">
                                 <button class="btn btn-sm btn-info btn-edit" data-info="${priceData}"><i class="fas fa-edit"></i></button>
@@ -117,8 +134,49 @@ $(document).ready(function() {
                             </td>
                         </tr>
                     `;
+
+                    // =====================================
+                    // 📱 สำหรับ Mobile (Cards)
+                    // =====================================
+                    mobileCards += `
+                        <div class="col-12 mb-3">
+                            <div class="card border-left-success shadow-sm h-100">
+                                <div class="card-body py-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                                        <span class="font-weight-bold text-dark"><i class="far fa-calendar-alt text-success"></i> ${p.display_date}</span>
+                                        <span class="badge badge-info">${p.branch_name || 'ไม่ระบุ'}</span>
+                                    </div>
+                                    
+                                    <div class="row mb-2 text-center">
+                                        <div class="col-6 border-right">
+                                            <small class="text-muted">ซื้อหน้าลาน (฿)</small><br>
+                                            <span class="h4 font-weight-bold text-success mb-0">${buyPriceText}</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">ส่งโรงงาน (฿)</small><br>
+                                            <span class="h5 font-weight-bold text-primary mb-0">${sellPriceText}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-sm text-muted mb-2 text-center bg-light rounded py-1">
+                                        <i class="fas fa-user-edit fa-fw"></i> ผู้บันทึก: ${p.created_by_name || 'System'}
+                                    </div>
+                                    
+                                    <div class="text-right border-top pt-2 mt-2">
+                                        <button class="btn btn-sm btn-outline-info btn-edit" data-info="${priceData}">
+                                            <i class="fas fa-edit"></i> แก้ไข
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${p.id}" data-date="${p.display_date}">
+                                            <i class="fas fa-trash"></i> ลบ
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 });
                 
+                // อัปเดตตาราง Desktop
                 if ($.fn.DataTable.isDataTable('#priceTable')) {
                     $('#priceTable').DataTable().clear().destroy();
                 }
@@ -127,6 +185,12 @@ $(document).ready(function() {
                     language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' },
                     order: [[0, 'desc']] // ให้เรียงวันที่ล่าสุดขึ้นก่อนเสมอ
                 });
+
+                // 🟢 อัปเดต Card มือถือ
+                if (mobileCards === '') {
+                    mobileCards = '<div class="col-12 text-center text-muted py-4">ไม่พบข้อมูลราคารับซื้อ</div>';
+                }
+                $('#priceListMobile').html(mobileCards);
             }
         });
     }

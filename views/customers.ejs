@@ -10,26 +10,34 @@
         </button>
     </div>
 
-    <div class="card shadow mb-4 border-left-primary">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="customerTable" width="100%" cellspacing="0">
-                    <thead class="bg-light text-center">
-                        <tr>
-                            <th>รหัส</th>
-                            <th>สาขา</th>
-                            <th>ชื่อ-นามสกุล</th>
-                            <th>ประเภท</th>
-                            <th>เบอร์โทรศัพท์</th>
-                            <th>ธนาคาร</th>
-                            <th>จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customerTableBody">
-                        </tbody>
-                </table>
+    <div class="d-none d-lg-block">
+        <div class="card shadow mb-4 border-left-primary">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="customerTable" width="100%" cellspacing="0">
+                        <thead class="bg-light text-center">
+                            <tr>
+                                <th>รหัส</th>
+                                <th>สาขา</th>
+                                <th>ชื่อ-นามสกุล</th>
+                                <th>ประเภท</th>
+                                <th>เบอร์โทรศัพท์</th>
+                                <th>ธนาคาร</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTableBody">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </div>
+    </div>
+
+    <div class="d-block d-lg-none">
+        <h6 class="font-weight-bold text-primary mb-3"><i class="fas fa-list"></i> รายชื่อลูกค้าทั้งหมด</h6>
+        <div class="row" id="customerListMobile">
+            </div>
     </div>
 </div>
 
@@ -44,10 +52,11 @@
             </div>
             <form id="customerForm">
                 <div class="modal-body p-4">
-                    <input type="hidden" id="customerId" name="id"> <div class="form-group">
-                        <div class="form-group">
+                    <input type="hidden" id="customerId" name="id"> 
+                    
+                    <div class="row">
+                        <div class="col-md-12 form-group">
                             <label>สาขาประจำ <span class="text-danger">*</span></label>
-                            
                             <select class="form-control" id="formBranchId" name="branch_id" required 
                                 <%= typeof accessLevel !== 'undefined' && accessLevel === 3 ? 'readonly style="pointer-events: none; background-color: #eaecf4;"' : '' %>>
                                 
@@ -63,9 +72,9 @@
                                     <% }); %>
                                 <% } %>
                             </select>
-                            
                         </div>
-
+                    </div>
+                    <div class="form-group">
                         <label>ชื่อ-นามสกุล <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="customerName" name="customer_name" required>
                     </div>
@@ -116,11 +125,13 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
-    // 🚀 1. ฟังก์ชันโหลดข้อมูลลูกค้าลงตาราง
+    // 🚀 1. ฟังก์ชันโหลดข้อมูลลูกค้าลงตาราง และ การ์ดมือถือ
     function loadCustomers() {
         $.get('/myproject_nodejs/api/customers', function(response) {
             if (response.status === 'success') {
                 let rows = '';
+                let mobileCards = ''; // 🟢 ตัวแปรเก็บ HTML สำหรับมือถือ
+
                 response.data.forEach(c => {
                     let typeBadge = c.customer_type === 'regular' 
                         ? '<span class="badge badge-success">ลูกค้าประจำ</span>' 
@@ -128,6 +139,9 @@ $(document).ready(function() {
                     
                     let customerData = encodeURIComponent(JSON.stringify(c));
 
+                    // =====================================
+                    // 💻 สำหรับ Desktop (Table)
+                    // =====================================
                     rows += `
                         <tr>
                             <td class="text-center font-weight-bold text-primary">${c.customer_code}</td>
@@ -136,14 +150,47 @@ $(document).ready(function() {
                             <td class="text-center">${typeBadge}</td>
                             <td class="text-center">${c.phone_number || '-'}</td>
                             <td class="text-center">${c.bank_name || '-'} <br> <small class="text-muted">${c.bank_account_no || ''}</small></td>
-                            <td class="text-center">
+                            <td class="text-center" style="white-space: nowrap;">
                                 <button class="btn btn-sm btn-info btn-edit" data-info="${customerData}"><i class="fas fa-edit"></i></button>
                                 <button class="btn btn-sm btn-danger btn-delete" data-id="${c.id}" data-name="${c.customer_name}"><i class="fas fa-trash"></i></button>
                             </td>
                         </tr>
                     `;
+
+                    // =====================================
+                    // 📱 สำหรับ Mobile (Cards)
+                    // =====================================
+                    mobileCards += `
+                        <div class="col-12 mb-3">
+                            <div class="card border-left-primary shadow-sm h-100">
+                                <div class="card-body py-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="font-weight-bold text-primary"><i class="fas fa-id-badge"></i> ${c.customer_code}</span>
+                                        <span class="badge badge-info">${c.branch_name || '-'}</span>
+                                    </div>
+                                    <h6 class="font-weight-bold text-dark mb-2">${c.customer_name}</h6>
+                                    
+                                    <div class="text-sm text-muted mb-3">
+                                        <div class="mb-1"><strong>ประเภท:</strong> ${typeBadge}</div>
+                                        <div class="mb-1"><i class="fas fa-phone fa-fw"></i> ${c.phone_number || 'ไม่ระบุ'}</div>
+                                        <div><i class="fas fa-university fa-fw"></i> ${c.bank_name || 'ไม่ระบุ'} <small>${c.bank_account_no || ''}</small></div>
+                                    </div>
+                                    
+                                    <div class="text-right border-top pt-2 mt-2">
+                                        <button class="btn btn-sm btn-outline-info btn-edit" data-info="${customerData}">
+                                            <i class="fas fa-edit"></i> แก้ไข
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${c.id}" data-name="${c.customer_name}">
+                                            <i class="fas fa-trash"></i> ลบ
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 });
                 
+                // อัปเดตตาราง Desktop
                 if ($.fn.DataTable.isDataTable('#customerTable')) {
                     $('#customerTable').DataTable().clear().destroy();
                 }
@@ -151,6 +198,12 @@ $(document).ready(function() {
                 $('#customerTable').DataTable({
                     language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
                 });
+
+                // 🟢 อัปเดต Card มือถือ
+                if (mobileCards === '') {
+                    mobileCards = '<div class="col-12 text-center text-muted py-4">ไม่พบข้อมูลลูกค้า</div>';
+                }
+                $('#customerListMobile').html(mobileCards);
             }
         });
     }
@@ -170,7 +223,6 @@ $(document).ready(function() {
         let data = JSON.parse(decodeURIComponent($(this).data('info')));
         
         $('#customerId').val(data.id);
-        // 🟢 เพิ่มบรรทัดนี้ เพื่อเซ็ตค่า Dropdown ให้ตรงกับสาขาของลูกค้า
         $('#formBranchId').val(data.branch_id);
         $('#customerName').val(data.customer_name);
         $('#customerType').val(data.customer_type);

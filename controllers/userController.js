@@ -55,8 +55,15 @@ const showUserList = async (req, res) => {
 const addUser = async (req, res) => {
     try {
         // 🚀 รับค่า accessible_branches เข้ามาเพิ่ม (มันจะมาเป็น Array หรือ String ขึ้นอยู่กับว่าเลือกกี่อัน)
-        const { username, password, fullname, group_id, branch_id, dept_id, accessible_branches } = req.body;
+        const { username, password, fullname, group_id, branch_id, dept_id, accessible_branches, expires_at } = req.body;
+        // ตัวอย่างการรับค่าใน Controller (ทั้ง Add และ Update)
+        // const { username, password, fullname, group_id, branch_id, dept_id, force_logout, expires_at } = req.body;
 
+        // 💡 ดักค่าว่างไว้ด้วย เพราะถ้าปล่อยว่าง มันจะส่งมาเป็น string เปล่าๆ ('')
+        const paramExpiresAt = (expires_at && expires_at.trim() !== '') ? expires_at : null;
+
+        // แล้วเอาตัวแปร paramExpiresAt ยัดใส่คำสั่ง UPDATE/INSERT SQL ครับ
+        // UPDATE users SET ..., expires_at = ? WHERE id = ?
         if (!username || !password || !fullname) {
             return res.json({ status: 'error', message: 'กรุณากรอก Username, Password และชื่อ-นามสกุลให้ครบถ้วนครับ' });
         }
@@ -68,8 +75,9 @@ const addUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const sqlInsert = `INSERT INTO users (username, password, fullname, group_id, branch_id, dept_id) VALUES (?, ?, ?, ?, ?, ?)`;
-        const [result] = await db.query(sqlInsert, [username, hashedPassword, fullname, g_id, b_id, d_id]);
+        const sqlInsert = `INSERT INTO users (username, password, fullname, group_id, branch_id, dept_id ,expires_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        const [result] = await db.query(sqlInsert, [username, hashedPassword, fullname, g_id, b_id, d_id, paramExpiresAt]);
         
         const newUserId = result.insertId;
 
@@ -124,7 +132,11 @@ const getUser = async (req, res) => {
 // 🟢 3. ฟังก์ชัน updateUser (ตอนกดอัปเดต)
 const updateUser = async (req, res) => {
     try {
-        const { id, password, fullname, group_id, branch_id, dept_id, force_logout, accessible_branches } = req.body;
+        const { id, password, fullname, group_id, branch_id, dept_id, force_logout, accessible_branches, expires_at } = req.body;
+        // const { username, password, fullname, group_id, branch_id, dept_id, force_logout, expires_at } = req.body;
+
+        // 💡 ดักค่าว่างไว้ด้วย เพราะถ้าปล่อยว่าง มันจะส่งมาเป็น string เปล่าๆ ('')
+        const paramExpiresAt = (expires_at && expires_at.trim() !== '') ? expires_at : null;
 
         const g_id = group_id ? group_id : null;
         const b_id = branch_id ? branch_id : null;
@@ -136,11 +148,11 @@ const updateUser = async (req, res) => {
         if (password) {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
-            sqlUpdate = `UPDATE users SET password = ?, fullname = ?, group_id = ?, branch_id = ?, dept_id = ?, force_logout = ? WHERE id = ?`;
+            sqlUpdate = `UPDATE users SET password = ?, fullname = ?, group_id = ?, branch_id = ?, dept_id = ?, force_logout = ?, expires_at = ? WHERE id = ?`;
             queryParams = [hashedPassword, fullname, g_id, b_id, d_id, force_logout, id];
         } else {
-            sqlUpdate = `UPDATE users SET fullname = ?, group_id = ?, branch_id = ?, dept_id = ?, force_logout = ? WHERE id = ?`;
-            queryParams = [fullname, g_id, b_id, d_id, force_logout, id];
+            sqlUpdate = `UPDATE users SET fullname = ?, group_id = ?, branch_id = ?, dept_id = ?, force_logout = ?, expires_at = ? WHERE id = ?`;
+            queryParams = [fullname, g_id, b_id, d_id, force_logout, id ,paramExpiresAt];
         }
         await db.query(sqlUpdate, queryParams);
 

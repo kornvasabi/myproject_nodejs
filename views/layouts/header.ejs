@@ -38,6 +38,55 @@
 		  overflow-x: hidden !important;
 		}
 	</style>
+	<style>
+		/* ========================================== */
+		/* 🖨️ ตั้งค่าสำหรับการพิมพ์ (Print Mode) */
+		/* ========================================== */
+		@media print {
+			/* 1. ซ่อนทุกอย่างบนหน้าจอ ทั้งเมนู แถบบน ตารางด้านหลัง */
+			body * {
+				visibility: hidden !important;
+			}
+	
+			/* 2. บังคับให้โชว์เฉพาะเนื้อหาใน Modal สรุปบิล */
+			#summaryOutboundModal, #summaryOutboundModal * {
+				visibility: visible !important;
+			}
+	
+			/* 3. จัดตำแหน่ง Modal ให้อยู่มุมซ้ายบนพอดีกระดาษ */
+			#summaryOutboundModal {
+				position: absolute !important;
+				left: 0 !important;
+				top: 0 !important;
+				width: 100% !important;
+				margin: 0 !important;
+				padding: 0 !important;
+				border: none !important;
+				box-shadow: none !important;
+			}
+	
+			/* 4. ซ่อนปุ่ม "พิมพ์สรุป" กับ "ปิดหน้าต่าง" ตอนปรินท์ (กระดาษจะได้สวยๆ) */
+			#summaryOutboundModal .modal-footer {
+				display: none !important;
+			}
+	
+			/* 5. ซ่อนปุ่มกากบาทมุมขวาบน (X) */
+			#summaryOutboundModal .close {
+				display: none !important;
+			}
+	
+			/* 6. ลบเงาดำๆ ของพื้นหลัง Modal ตอนเปิด */
+			.modal-backdrop {
+				display: none !important;
+			}
+			
+			/* 7. (Optional) ปรับพื้นหลังให้ขาวสะอาด ประหยัดหมึก */
+			.modal-content {
+				border: none !important;
+				background-color: white !important;
+			}
+		}
+	</style>
 </head>
 
 <body id="page-top">

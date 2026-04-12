@@ -14,10 +14,10 @@
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users"></i> รายชื่อผู้ใช้งานทั้งหมด</h6>
                     <% if (permission && permission.can_add === 1) { %>
-						<button class="btn btn-sm btn-success shadow-sm" data-toggle="modal" data-target="#addUserModal">
-							<i class="fas fa-plus fa-sm text-white-50"></i> <%= __('action.add') %>
-						</button>
-					<% } %>
+                        <button class="btn btn-sm btn-success shadow-sm" data-toggle="modal" data-target="#addUserModal">
+                            <i class="fas fa-plus fa-sm text-white-50"></i> <%= __('action.add') %>
+                        </button>
+                    <% } %>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -30,10 +30,11 @@
                                     <th>กลุ่มสิทธิ์</th>
                                     <th>สาขา</th>
                                     <th>แผนก</th>
+                                    <th class="text-center">วันหมดอายุ</th>
                                     <th class="text-center">สถานะ</th>
                                     <% if (permission && (permission.can_edit === 1 || permission.can_delete === 1)) { %>
-										<th width="15%" class="text-center">จัดการ</th>
-									<% } %>
+                                        <th width="15%" class="text-center">จัดการ</th>
+                                    <% } %>
                                 </tr>
                             </thead>
                             <tbody>
@@ -48,27 +49,44 @@
                                             <td><%= user.dept_name || '-' %></td>
                                             
                                             <td class="text-center">
+                                                <% if (user.expires_at) { %>
+                                                    <% 
+                                                        let d = new Date(user.expires_at);
+                                                        let now = new Date();
+                                                        let day = String(d.getDate()).padStart(2, '0');
+                                                        let month = String(d.getMonth() + 1).padStart(2, '0');
+                                                        let year = d.getFullYear() + 543;
+                                                        let time = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+                                                        let textClass = (now > d) ? 'text-danger font-weight-bold' : 'text-primary';
+                                                    %>
+                                                    <small class="<%= textClass %>"><%= day %>/<%= month %>/<%= year %> <%= time %></small>
+                                                <% } else { %>
+                                                    <span class="text-muted"><small>ไม่มีกำหนด</small></span>
+                                                <% } %>
+                                            </td>
+
+                                            <td class="text-center">
                                                 <% if (user.force_logout === 1) { %>
                                                     <span class="badge badge-danger">ถูกระงับ</span>
                                                 <% } else { %>
                                                     <span class="badge badge-success">ปกติ</span>
                                                 <% } %>
                                             </td>
-											<% if (permission && (permission.can_edit === 1 || permission.can_delete === 1)) { %>
-												<td class="text-center">
-													<% if (permission.can_edit === 1) { %>
-														<button class="btn btn-warning btn-sm btn-edit" data-id="<%= user.id %>" title="แก้ไข"><i class="fas fa-edit"></i></button>
-													<% } %>
-													<% if (permission.can_delete === 1) { %>
-														<button class="btn btn-danger btn-sm btn-delete" data-id="<%= user.id %>" title="ลบ"><i class="fas fa-trash"></i></button>
-													<% } %>
-												</td>
-											<% } %>
+                                            <% if (permission && (permission.can_edit === 1 || permission.can_delete === 1)) { %>
+                                                <td class="text-center">
+                                                    <% if (permission.can_edit === 1) { %>
+                                                        <button class="btn btn-warning btn-sm btn-edit" data-id="<%= user.id %>" title="แก้ไข"><i class="fas fa-edit"></i></button>
+                                                    <% } %>
+                                                    <% if (permission.can_delete === 1) { %>
+                                                        <button class="btn btn-danger btn-sm btn-delete" data-id="<%= user.id %>" title="ลบ"><i class="fas fa-trash"></i></button>
+                                                    <% } %>
+                                                </td>
+                                            <% } %>
                                         </tr>
                                     <% }); %>
                                 <% } else { %>
                                     <tr>
-                                        <td colspan="8" class="text-center">ไม่พบข้อมูลผู้ใช้งาน</td>
+                                        <td colspan="9" class="text-center">ไม่พบข้อมูลผู้ใช้งาน</td>
                                     </tr>
                                 <% } %>
                             </tbody>
@@ -80,53 +98,60 @@
         </div>
         </div>
     </div>
-	<div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-hidden="true">
-		<div class="modal-dialog modal-lg" role="document">
-			<div class="modal-content">
-				<form id="formAddUser">
-					<div class="modal-header bg-success text-white">
-						<h5 class="modal-title"><i class="fas fa-user-plus"></i> <%= __('action.add') %></h5>
-						<button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
-							<span aria-hidden="true">×</span>
-						</button>
-					</div>
-					<div class="modal-body">
-						<div class="row">
-							<div class="col-md-6 form-group">
-								<label><%= __('form.username') %> <span class="text-danger">*</span></label>
-								<input type="text" class="form-control" name="username" required>
-							</div>
-							<div class="col-md-6 form-group">
-								<label><%= __('form.password') %> <span class="text-danger">*</span></label>
-								<input type="password" class="form-control" name="password" required>
-							</div>
-						</div>
-						<div class="form-group">
-							<label><%= __('form.fullname') %> <span class="text-danger">*</span></label>
-							<input type="text" class="form-control" name="fullname" required>
-						</div>
-						
-						<hr>
-						<h6 class="font-weight-bold text-primary"><%= __('form.permissions') %></h6>
-						<div class="row">
-							<div class="col-md-4 form-group">
-								<label><%= __('form.usergroup') %></label>
-								<select class="form-control" name="group_id">
-									<option value=""><%= __('form.selectno') %></option>
-									<% groups.forEach(function(g) { %>
-										<option value="<%= g.id %>"><%= g.group_name %></option>
-									<% }); %>
-								</select>
-							</div>
-							<div class="col-md-4 form-group">
-								<label><%= __('form.locats') %></label>
-								<select class="form-control" name="branch_id">
-									<option value=""><%= __('form.selectno') %></option>
-									<% branches.forEach(function(b) { %>
-										<option value="<%= b.id %>"><%= b.branch_name %></option>
-									<% }); %>
-								</select>
-							</div>
+    <div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <form id="formAddUser">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title"><i class="fas fa-user-plus"></i> <%= __('action.add') %></h5>
+                        <button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">×</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label><%= __('form.username') %> <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="username" required>
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label><%= __('form.password') %> <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" name="password" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8 form-group">
+                                <label><%= __('form.fullname') %> <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="fullname" required>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="text-warning font-weight-bold"><i class="fas fa-clock"></i> สิ้นสุดการใช้งาน</label>
+                                <input type="datetime-local" class="form-control border-warning" name="expires_at">
+                                <small class="text-muted">ปล่อยว่าง = ใช้ได้ตลอดไป</small>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        <h6 class="font-weight-bold text-primary"><%= __('form.permissions') %></h6>
+                        <div class="row">
+                            <div class="col-md-4 form-group">
+                                <label><%= __('form.usergroup') %></label>
+                                <select class="form-control" name="group_id">
+                                    <option value=""><%= __('form.selectno') %></option>
+                                    <% groups.forEach(function(g) { %>
+                                        <option value="<%= g.id %>"><%= g.group_name %></option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label><%= __('form.locats') %></label>
+                                <select class="form-control" name="branch_id">
+                                    <option value=""><%= __('form.selectno') %></option>
+                                    <% branches.forEach(function(b) { %>
+                                        <option value="<%= b.id %>"><%= b.branch_name %></option>
+                                    <% }); %>
+                                </select>
+                            </div>
                             
                             <div class="col-md-12 form-group mt-2">
                                 <label class="font-weight-bold text-info"><i class="fas fa-map-marked-alt"></i> สาขารองที่เข้าถึงได้ (สำหรับผู้จัดการ)</label>
@@ -137,25 +162,25 @@
                                 </select>
                             </div>
 
-							<div class="col-md-4 form-group">
-								<label><%= __('form.department') %></label>
-								<select class="form-control" name="dept_id">
-									<option value=""><%= __('form.selectno') %></option>
-									<% departments.forEach(function(d) { %>
-										<option value="<%= d.id %>"><%= d.dept_name %></option>
-									<% }); %>
-								</select>
-							</div>
-						</div>
-					</div>
-					<div class="modal-footer">
-						<button class="btn btn-secondary" type="button" data-dismiss="modal"><%= __('action.cancel') %></button>
-						<button type="submit" class="btn btn-success"><%= __('action.save') %></button>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
+                            <div class="col-md-4 form-group">
+                                <label><%= __('form.department') %></label>
+                                <select class="form-control" name="dept_id">
+                                    <option value=""><%= __('form.selectno') %></option>
+                                    <% departments.forEach(function(d) { %>
+                                        <option value="<%= d.id %>"><%= d.dept_name %></option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" type="button" data-dismiss="modal"><%= __('action.cancel') %></button>
+                        <button type="submit" class="btn btn-success"><%= __('action.save') %></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="editUserModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
@@ -216,11 +241,15 @@
                                     <% departments.forEach(function(d) { %> <option value="<%= d.id %>"><%= d.dept_name %></option> <% }); %>
                                 </select>
                             </div>
-                            <div class="col-md-3 form-group">
-                                <label class="text-danger">สถานะ</label>
+                            <div class="col-md-5 form-group">
+                                <label class="text-warning font-weight-bold"><i class="fas fa-clock"></i> สิ้นสุดการใช้งาน</label>
+                                <input type="datetime-local" class="form-control border-warning" name="expires_at" id="edit_expires_at">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="text-danger font-weight-bold">สถานะบัญชี</label>
                                 <select class="form-control border-danger" name="force_logout" id="edit_force_logout">
                                     <option value="0">ใช้งานปกติ</option>
-                                    <option value="1">ระงับการใช้งาน</option>
+                                    <option value="1">ระงับการใช้งานชั่วคราว</option>
                                 </select>
                             </div>
                         </div>
@@ -253,39 +282,39 @@
     .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
         color: white;
         margin-right: 5px;
+        border-right: none; 
+        padding-right: 5px; 
     }
     .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
         color: #ffcccc;
         background: transparent;
     }
-    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-        color: white;
-        margin-right: 5px;
-        border-right: none; /* 🟢 เพิ่มบรรทัดนี้เพื่อซ่อนเส้นขีดคั่น */
-        padding-right: 5px; /* 🟢 เพิ่มระยะห่างนิดหน่อยให้สวยงาม */
-    }
 </style>
 <script>
-    // 🟢 1. จับ EJS ใส่ในเครื่องหมายคำพูด (VS Code จะมองเป็น String และเลิกฟ้อง Error)
     const strEdit = '<%= (permission && permission.can_edit === 1) ? "true" : "false" %>';
     const strDelete = '<%= (permission && permission.can_delete === 1) ? "true" : "false" %>';
-	
-	// const PERM_CAN_EDIT = <%= (permission && permission.can_edit === 1) ? 'true' : 'false' %>;
-    // const PERM_CAN_DELETE = <%= (permission && permission.can_delete === 1) ? 'true' : 'false' %>;
-	
-    // 🟢 2. แปลงข้อความ String ให้กลายเป็นตัวแปร Boolean (true/false) จริงๆ ของ JavaScript
+    
     const PERM_CAN_EDIT = (strEdit === 'true');
     const PERM_CAN_DELETE = (strDelete === 'true');
-	
-	const HAS_ACTION_COLUMN = (PERM_CAN_EDIT || PERM_CAN_DELETE);
+    
+    const HAS_ACTION_COLUMN = (PERM_CAN_EDIT || PERM_CAN_DELETE);
+
+    // 🟢 ฟังก์ชันเสริมสำหรับแปลงเวลาส่งกลับไปโชว์ในตาราง (ตอน Add/Edit ผ่าน AJAX)
+    function formatExpireDate(dateString) {
+        if (!dateString) return '<span class="text-muted"><small>ไม่มีกำหนด</small></span>';
+        let d = new Date(dateString);
+        let now = new Date();
+        let day = String(d.getDate()).padStart(2, '0');
+        let month = String(d.getMonth() + 1).padStart(2, '0');
+        let year = d.getFullYear() + 543;
+        let time = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        let colorClass = now > d ? 'text-danger font-weight-bold' : 'text-primary';
+        return `<small class="${colorClass}">${day}/${month}/${year} ${time}</small>`;
+    }
     
     $(document).ready(function() {
         AppTools.initDataTable('#usersTable');
-        // 🟢 ปลุกชีพ Select2 ให้กล่อง Select ที่มีคลาส .select2-multiple
         
-        // ==========================================
-        // 🟢 1. ปลุกชีพ Select2 แยกแต่ละ Modal (แก้ปัญหาพิมพ์ค้นหาไม่ได้)
-        // ==========================================
         $('#addUserModal .select2-multiple').select2({
             placeholder: "คลิกเพื่อค้นหา หรือเลือกสาขารอง...",
             allowClear: true,
@@ -298,22 +327,14 @@
             dropdownParent: $('#editUserModal')
         });
 
-        // ==========================================
-        // 🟢 2. เคลียร์ค่า Select2 ตอนปิดหน้าต่าง Modal (ป้องกันข้อมูลค้าง)
-        // ==========================================
-        $('#addUserModal').on('hidden.bs.modal', function () {
-            $(this).find('.select2-multiple').val(null).trigger('change');
-        });
-        
-        $('#editUserModal').on('hidden.bs.modal', function () {
+        $('#addUserModal, #editUserModal').on('hidden.bs.modal', function () {
             $(this).find('.select2-multiple').val(null).trigger('change');
         });
 
-        // 🟢 ดักจับการกดปุ่มบันทึกในฟอร์ม
+        // ================== บันทึกผู้ใช้ใหม่ ==================
         $('#formAddUser').on('submit', function(e) {
-            e.preventDefault(); // เบรกไม่ให้หน้าเว็บรีเฟรช
-
-            let formData = $(this).serialize(); // รวบรวมข้อมูลทั้งหมดในฟอร์ม
+            e.preventDefault(); 
+            let formData = $(this).serialize(); 
 
             $.ajax({
                 type: 'POST',
@@ -321,44 +342,24 @@
                 data: formData,
                 success: function(response) {
                     if (response.status === 'success') {
-                        // ปิด Modal และล้างฟอร์ม
                         $('#addUserModal').modal('hide');
                         $('#formAddUser')[0].reset();
-                        
-                        // โชว์แจ้งเตือนสำเร็จ
                         AppTools.showModal('สำเร็จ!', response.message, 'success');
                         
-                        // ==========================================
-                        // 🚀 อัปเกรดใหม่: เอาข้อมูลมาต่อท้ายตารางแบบไม่ต้องรีเฟรช!
-                        // ==========================================
                         let table = $('#usersTable').DataTable();
-                        let u = response.data; // ดึงข้อมูลที่ Node.js ส่งกลับมา
+                        let u = response.data; 
                         
-                        // เตรียมป้ายสถานะ และปุ่มจัดการ (ให้หน้าตาเหมือน EJS เดิมเป๊ะๆ)
                         let statusBadge = u.force_logout === 1 
                             ? '<span class="badge badge-danger">ถูกระงับ</span>' 
                             : '<span class="badge badge-success">ปกติ</span>';
                             
-                        /*let actionBtns = `
-                            <button class="btn btn-warning btn-sm btn-edit" data-id="${u.id}" title="แก้ไข"><i class="fas fa-edit"></i></button>
-							<button class="btn btn-danger btn-sm btn-delete" data-id="${u.id}" title="ลบ"><i class="fas fa-trash"></i></button>
-						`;
-                        */
-                        // 🟢 2. ต่อจิ๊กซอว์ปุ่มตามสิทธิ์ (ถ้าไม่มีสิทธิ์ ตัวแปรนี้จะว่างเปล่า)
+                        let expireHTML = formatExpireDate(u.expires_at); // 🟢 คำนวณวันหมดอายุ
+
                         let actionBtns = '';
+                        if (PERM_CAN_EDIT) actionBtns += `<button class="btn btn-warning btn-sm btn-edit" data-id="${u.id}" title="แก้ไข"><i class="fas fa-edit"></i></button> `;
+                        if (PERM_CAN_DELETE) actionBtns += `<button class="btn btn-danger btn-sm btn-delete" data-id="${u.id}" title="ลบ"><i class="fas fa-trash"></i></button>`;
                         
-                        if (PERM_CAN_EDIT) {
-                            actionBtns += `<button class="btn btn-warning btn-sm btn-edit" data-id="${u.id}" title="แก้ไข"><i class="fas fa-edit"></i></button> `;
-                        }
-                        
-                        if (PERM_CAN_DELETE) {
-                            actionBtns += `<button class="btn btn-danger btn-sm btn-delete" data-id="${u.id}" title="ลบ"><i class="fas fa-trash"></i></button>`;
-                        }
-                        
-                        // ==========================================
-                        // 🚀 อัปเกรดแบบ Dynamic Column ป้องกัน DataTables พัง
-                        // ==========================================
-                        // 🟢 2. สร้างก้อนข้อมูล 7 คอลัมน์พื้นฐานไว้ก่อน
+                        // 🟢 เพิ่มข้อมูลเป็น 8 คอลัมน์พื้นฐาน
                         let rowData = [
                             u.id,
                             u.username,
@@ -366,33 +367,19 @@
                             u.group_name || '-',
                             u.branch_name || '-',
                             u.dept_name || '-',
-                            statusBadge
+                            expireHTML,   // <--- คอลัมน์ใหม่ที่แทรกเข้ามา (คอลัมน์ที่ 6)
+                            statusBadge   // <--- คอลัมน์สถานะขยับไปที่ 7
                         ];
 
-                        // 🟢 3. ถ้าระบบมีคอลัมน์จัดการ ค่อยดันปุ่มเข้าไปเป็นคอลัมน์ที่ 8
-                        if (HAS_ACTION_COLUMN) {
-                            rowData.push(actionBtns);
-                        }
+                        if (HAS_ACTION_COLUMN) rowData.push(actionBtns);
 
-                        // 🟢 4. สั่งวาดตารางโดยใช้ก้อน Array ที่เราประกอบเสร็จแล้ว
                         let rowNode = table.row.add(rowData).draw(false).node(); 
-                        // ==========================================
 
-                        // 🟢 5. สั่งจัดตำแหน่ง (add Class)
-                        $(rowNode).find('td').eq(0).addClass('text-center'); // ID
-                        $(rowNode).find('td').eq(6).addClass('text-center'); // สถานะ
-                        
-                        // ถ้ามีคอลัมน์ที่ 8 (จัดการ) ค่อยจัดให้อยู่ตรงกลาง
-                        if (HAS_ACTION_COLUMN) {
-                            $(rowNode).find('td').eq(7).addClass('text-center'); 
-                        }
-
-                        // 🟢 สั่งจัดตำแหน่ง (add Class) ให้คอลัมน์ (td) ที่ต้องการ 
-                        // 💡 ทริคโปรแกรมเมอร์: คอลัมน์เริ่มนับจาก 0 นะครับ
-                        $(rowNode).find('td').eq(0).addClass('text-center'); // คอลัมน์ที่ 0 (ID) จัดกลาง
-                        $(rowNode).find('td').eq(6).addClass('text-center'); // คอลัมน์ที่ 6 (สถานะ) จัดกลาง
-                        $(rowNode).find('td').eq(7).addClass('text-center'); // คอลัมน์ที่ 7 (จัดการ) จัดกลาง
-
+                        // 🟢 ขยับคอลัมน์ตอน Add Class (นับจาก 0)
+                        $(rowNode).find('td').eq(0).addClass('text-center'); 
+                        $(rowNode).find('td').eq(6).addClass('text-center'); // วันหมดอายุ
+                        $(rowNode).find('td').eq(7).addClass('text-center'); // สถานะ
+                        if (HAS_ACTION_COLUMN) $(rowNode).find('td').eq(8).addClass('text-center'); 
                     } else {
                         AppTools.showModal('ผิดพลาด', response.message, 'warning');
                     }
@@ -400,10 +387,9 @@
             });
         });
 
-        // 🟢 สร้างตัวแปรจำว่าคลิกแก้ไขแถวไหน
         let currentRow;
 
-        // 🟢 ดักจับตอนคลิกปุ่ม "แก้ไข"
+        // ================== ดึงข้อมูลมาแก้ไข ==================
         $('#usersTable').on('click', '.btn-edit', function() {
             currentRow = $(this).closest('tr');
             let userId = $(this).data('id');
@@ -415,23 +401,26 @@
                     if (res.status === 'success') {
                         let u = res.data;
                         
-                        // หยอดข้อมูลทั่วไป
                         $('#edit_id').val(u.id);
                         $('#edit_username').val(u.username);
                         $('#edit_fullname').val(u.fullname);
                         $('#edit_group_id').val(u.group_id);
-                        $('#edit_branch_id').val(u.branch_id); // 🟢 อันนี้คือสาขาหลัก
+                        $('#edit_branch_id').val(u.branch_id); 
                         $('#edit_dept_id').val(u.dept_id);
                         $('#edit_force_logout').val(u.force_logout);
+
+                        // 🟢 จัดการยัดข้อมูลลงในช่อง input type="datetime-local" ให้ถูกต้อง
+                        if (u.expires_at) {
+                            let dt = new Date(u.expires_at);
+                            dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset()); // ปรับเวลาให้ตรงกับ Local (ไทย)
+                            $('#edit_expires_at').val(dt.toISOString().slice(0,16));
+                        } else {
+                            $('#edit_expires_at').val('');
+                        }
                         
-                        // ==========================================
-                        // 🚀 หยอดข้อมูลสาขารองใส่ Select2 
-                        // ==========================================
                         if (res.mapped_branches && res.mapped_branches.length > 0) {
-                            // ยัด Array [1, 2] เข้าไป แล้วสั่งให้อัปเดต UI ด้วย trigger('change')
                             $('#edit_accessible_branches').val(res.mapped_branches).trigger('change');
                         } else {
-                            // ถ้าไม่มีสิทธิ์เลย ให้เคลียร์ค่าออก
                             $('#edit_accessible_branches').val(null).trigger('change');
                         }
 
@@ -444,7 +433,7 @@
             });
         });
 
-        // 🟢 2. ดักจับตอนกดปุ่ม "อัปเดตข้อมูล"
+        // ================== บันทึกการแก้ไข ==================
         $('#formEditUser').on('submit', function(e) {
             e.preventDefault();
             let formData = $(this).serialize();
@@ -458,34 +447,19 @@
                         $('#editUserModal').modal('hide');
                         AppTools.showModal('สำเร็จ!', response.message, 'success');
 
-                        // 🚀 อัปเดตตารางเฉพาะแถวที่กำลังแก้ โดยไม่ต้องรีเฟรช!
                         let table = $('#usersTable').DataTable();
                         let u = response.data;
                         
                         let statusBadge = u.force_logout === 1 
                             ? '<span class="badge badge-danger">ถูกระงับ</span>' 
                             : '<span class="badge badge-success">ปกติ</span>';
-                            
-                        /*
-                        let actionBtns = `
-							<button class="btn btn-warning btn-sm btn-edit" data-id="${u.id}" title="แก้ไข"><i class="fas fa-edit"></i></button>
-							<button class="btn btn-danger btn-sm btn-delete" data-id="${u.id}" title="ลบ"><i class="fas fa-trash"></i></button>
-						`;
-                        */
+
+                        let expireHTML = formatExpireDate(u.expires_at); // 🟢 คำนวณวันหมดอายุ
+
                         let actionBtns = '';
+                        if (PERM_CAN_EDIT) actionBtns += `<button class="btn btn-warning btn-sm btn-edit" data-id="${u.id}" title="แก้ไข"><i class="fas fa-edit"></i></button> `;
+                        if (PERM_CAN_DELETE) actionBtns += `<button class="btn btn-danger btn-sm btn-delete" data-id="${u.id}" title="ลบ"><i class="fas fa-trash"></i></button>`;
                         
-                        if (PERM_CAN_EDIT) {
-                            actionBtns += `<button class="btn btn-warning btn-sm btn-edit" data-id="${u.id}" title="แก้ไข"><i class="fas fa-edit"></i></button> `;
-                        }
-                        
-                        if (PERM_CAN_DELETE) {
-                            actionBtns += `<button class="btn btn-danger btn-sm btn-delete" data-id="${u.id}" title="ลบ"><i class="fas fa-trash"></i></button>`;
-                        }
-                        
-                        // ==========================================
-                        // 🚀 อัปเกรดแบบ Dynamic Column เพื่อความยืดหยุ่น
-                        // ==========================================
-                        // 🟢 2. สร้างก้อนข้อมูล 7 คอลัมน์พื้นฐาน
                         let rowData = [
                             u.id, 
                             u.username, 
@@ -493,81 +467,51 @@
                             u.group_name || '-', 
                             u.branch_name || '-', 
                             u.dept_name || '-',
+                            expireHTML,   // <--- แทรกตรงนี้
                             statusBadge
                         ];
 
-                        // 🟢 3. ถ้ามีคอลัมน์จัดการ ให้ดันปุ่มเข้าไปต่อท้าย
-                        if (HAS_ACTION_COLUMN) {
-                            rowData.push(actionBtns);
-                        }
+                        if (HAS_ACTION_COLUMN) rowData.push(actionBtns);
 
-                        // 🟢 4. ใช้ .data() ยัดก้อนข้อมูลใหม่ลงไปในแถวเดิม แล้ว .draw()
                         table.row(currentRow).data(rowData).draw(false);
 
-                        // 🟢 5. จัด Class ให้กลับมาอยู่ตรงกลางเหมือนเดิม
                         let rowNode = table.row(currentRow).node();
-                        $(rowNode).find('td').eq(0).addClass('text-center'); // ID
-                        $(rowNode).find('td').eq(6).addClass('text-center'); // สถานะ
-
-                        // ถ้ามีคอลัมน์ที่ 8 ค่อยจัดให้อยู่ตรงกลาง
-                        if (HAS_ACTION_COLUMN) {
-                            $(rowNode).find('td').eq(7).addClass('text-center'); 
-                        }
-                        // ==========================================
-						
-						
-                        $(rowNode).find('td').eq(0).addClass('text-center');
-                        $(rowNode).find('td').eq(6).addClass('text-center');
-                        $(rowNode).find('td').eq(7).addClass('text-center');
-
+                        $(rowNode).find('td').eq(0).addClass('text-center'); 
+                        $(rowNode).find('td').eq(6).addClass('text-center'); // วันหมดอายุ
+                        $(rowNode).find('td').eq(7).addClass('text-center'); // สถานะ
+                        if (HAS_ACTION_COLUMN) $(rowNode).find('td').eq(8).addClass('text-center'); 
                     } else {
                         AppTools.showModal('ผิดพลาด', response.message, 'warning');
                     }
                 }
             });
         });
-		
-		// ==========================================
-        // 🟢 4. ดักจับตอนคลิกปุ่ม "ลบ" (อัปเกรดใช้ SweetAlert2)
-        // ==========================================
+        
+        // ================== ลบผู้ใช้ ==================
         $('#usersTable').on('click', '.btn-delete', function() {
             let tr = $(this).closest('tr');
             let userId = $(this).data('id');
 
-            // 🚀 เรียกใช้ SweetAlert2 แทน confirm() ของเดิม
             Swal.fire({
                 title: 'ยืนยันการลบข้อมูล?',
                 text: "ลบแล้วจะไม่สามารถกู้คืนกลับมาได้นะครับ!",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#e74a3b', // สีแดงสไตล์ Bootstrap Danger
-                cancelButtonColor: '#858796',  // สีเทาสไตล์ Secondary
+                confirmButtonColor: '#e74a3b', 
+                cancelButtonColor: '#858796', 
                 confirmButtonText: '<i class="fas fa-trash"></i> ใช่, ลบเลย!',
                 cancelButtonText: 'ยกเลิก'
             }).then((result) => {
-                
-                // ถ้า User กดปุ่ม "ใช่, ลบเลย!" (isConfirmed จะเป็น true)
                 if (result.isConfirmed) {
-                    
-                    // ยิง AJAX ไปหลังบ้านตามปกติ
                     $.ajax({
                         type: 'POST',
                         url: '/myproject_nodejs/api/delete_user',
                         data: { id: userId },
                         success: function(response) {
                             if (response.status === 'success') {
-                                
-                                // 🟢 เปลี่ยนจาก AppTools แจ้งเตือน มาใช้ Swal แจ้งเตือนความสำเร็จสวยๆ
-                                Swal.fire(
-                                    'ลบสำเร็จ!',
-                                    response.message,
-                                    'success'
-                                );
-                                
-                                // ลบแถวออกจากตาราง
+                                Swal.fire('ลบสำเร็จ!', response.message, 'success');
                                 let table = $('#usersTable').DataTable();
                                 table.row(tr).remove().draw(false);
-                                
                             } else {
                                 Swal.fire('ผิดพลาด', response.message, 'warning');
                             }

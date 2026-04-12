@@ -73,10 +73,10 @@ exports.getOutbounds = async (req, res) => {
         
         sql += `order by o.delivery_datetime desc, o.id desc`;
 
-        console.log("SQL:", sql);
-        console.log("accessLevel:", accessLevel);
-        console.log("userId:", userId);
-        console.log("userBranchId:", userBranchId);
+        // console.log("SQL:", sql);
+        //console.log("accessLevel:", accessLevel);
+        //console.log("userId:", userId);
+        //console.log("userBranchId:", userBranchId);
 
         const [outbounds] = await db.query(sql, params);
 

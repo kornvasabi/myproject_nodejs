@@ -10,26 +10,34 @@
         </button>
     </div>
 
-    <div class="card shadow mb-4 border-left-primary">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="outboundTable" width="100%" cellspacing="0">
-                    <thead class="bg-light text-center">
-                        <tr>
-                            <th>เลขที่บิล</th>
-                            <th>วัน-เวลาที่ส่ง</th>
-                            <th>สาขาต้นทาง</th>
-                            <th>โรงงานปลายทาง</th>
-                            <th>น้ำหนักลาน (กก.)</th>
-                            <th>สถานะ</th>
-                            <th>จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="outboundTableBody">
-                        </tbody>
-                </table>
+    <div class="d-none d-lg-block">
+        <div class="card shadow mb-4 border-left-primary">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="outboundTable" width="100%" cellspacing="0">
+                        <thead class="bg-light text-center">
+                            <tr>
+                                <th>เลขที่บิล</th>
+                                <th>วัน-เวลาที่ส่ง</th>
+                                <th>สาขาต้นทาง</th>
+                                <th>โรงงานปลายทาง</th>
+                                <th>น้ำหนักลาน (กก.)</th>
+                                <th>สถานะ</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="outboundTableBody">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </div>
+    </div>
+
+    <div class="d-block d-lg-none">
+        <h6 class="font-weight-bold text-primary mb-3"><i class="fas fa-list"></i> รายการบิลส่งออกทั้งหมด</h6>
+        <div class="row" id="outboundListMobile">
+            </div>
     </div>
 </div>
 
@@ -157,7 +165,110 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="summaryOutboundModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-info text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-file-invoice-dollar"></i> สรุปบิลส่งออกโรงงาน</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                
+                <div class="row mb-3 pb-3 border-bottom">
+                    <div class="col-md-4">
+                        <small class="text-muted">เลขที่บิล:</small><br>
+                        <span class="h5 font-weight-bold text-dark" id="sumDeliveryNo"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">ออกจากลาน / ไปโรงงาน:</small><br>
+                        <span class="font-weight-bold text-info" id="sumBranch"></span> <i class="fas fa-arrow-right text-muted text-sm mx-1"></i> <span class="font-weight-bold text-primary" id="sumFactory"></span>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <small class="text-muted">วัน-เวลาที่ส่งออก:</small><br>
+                        <span class="font-weight-bold text-dark" id="sumDate"></span>
+                    </div>
+                </div>
 
+                <h6 class="font-weight-bold text-secondary mb-3"><i class="fas fa-balance-scale"></i> เปรียบเทียบข้อมูลชั่งตวง</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered text-center">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="text-left">รายการ</th>
+                                <th>ประเมินที่ลาน</th>
+                                <th>โรงงานตีให้จริง</th>
+                                <th>ส่วนต่าง (หด/เพิ่ม)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-left font-weight-bold text-secondary">น้ำหนักสุทธิ (กก.)</td>
+                                <td id="sumYardWeight"></td>
+                                <td id="sumFacWeight" class="font-weight-bold text-dark"></td>
+                                <td id="sumDiffWeight"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-left font-weight-bold text-secondary">เปอร์เซ็นต์ DRC (%)</td>
+                                <td id="sumYardDrc"></td>
+                                <td id="sumFacDrc" class="font-weight-bold text-dark"></td>
+                                <td id="sumDiffDrc"></td>
+                            </tr>
+                            <tr class="bg-light">
+                                <td class="text-left font-weight-bold text-dark">น้ำหนักยางแห้งสุทธิ (กก.)</td>
+                                <td id="sumYardDry"></td>
+                                <td id="sumFacDry" class="font-weight-bold text-primary"></td>
+                                <td id="sumDiffDry"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h6 class="font-weight-bold text-secondary mb-3"><i class="fas fa-hand-holding-usd"></i> สรุปผลประกอบการ</h6>
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <div class="card border-left-secondary h-100 py-2">
+                            <div class="card-body py-1 text-center">
+                                <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">ราคาโรงงาน (บาท/กก.)</div>
+                                <div class="h5 mb-0 font-weight-bold text-dark" id="sumUnitPrice"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <div class="card border-left-danger h-100 py-2">
+                            <div class="card-body py-1 text-center">
+                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">ต้นทุน + ค่าขนส่ง (บาท)</div>
+                                <div class="h5 mb-0 font-weight-bold text-danger" id="sumTotalCost"></div>
+                                <div class="text-xs text-muted mt-1" id="sumTransportCost"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <div class="card border-left-success h-100 py-2">
+                            <div class="card-body py-1 text-center">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">รายได้จากโรงงาน (บาท)</div>
+                                <div class="h5 mb-0 font-weight-bold text-success" id="sumTotalRev"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 p-3 rounded" id="sumProfitBox" style="background-color: #f8f9fc; border: 1px solid #e3e6f0;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0 font-weight-bold text-gray-800">กำไร / ขาดทุน สุทธิ:</h4>
+                        <h3 class="mb-0 font-weight-bold" id="sumNetProfit"></h3>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="fas fa-print"></i> พิมพ์สรุป</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+</div>
 <%- include('layouts/footer') %>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -166,14 +277,12 @@ $(document).ready(function() {
     // ==========================================
     // 🚀 ระบบความฉลาด: กรองโรงงานตามสาขาที่เลือก
     // ==========================================
-    // ดึงข้อมูลโรงงานทั้งหมดที่ Node.js ส่งมาให้ เก็บไว้ในตัวแปร JS
     const allFactories = <%- JSON.stringify(typeof factories !== 'undefined' ? factories : []) %>;
 
     $('#outboundBranch').on('change', function() {
         let selectedBranch = $(this).val();
         let factorySelect = $('#outboundFactory');
         
-        // ล้างข้อมูลเดิมในช่องโรงงานออกให้หมด
         factorySelect.empty();
 
         if (!selectedBranch) {
@@ -183,7 +292,6 @@ $(document).ready(function() {
 
         factorySelect.append('<option value="">-- เลือกโรงงาน --</option>');
         
-        // 🟢 กรองเอาเฉพาะโรงงานที่ branch_id ตรงกับสาขาที่เลือก
         let filteredFactories = allFactories.filter(f => f.branch_id == selectedBranch);
         
         filteredFactories.forEach(f => {
@@ -191,54 +299,95 @@ $(document).ready(function() {
         });
     });
 
-    // 🚀 สั่ง Trigger Change ตอนเปิด Modal เพิ่มข้อมูล
     $('#btnAddOutbound').click(function() {
         $('#createOutboundForm')[0].reset();
         $('#createOutboundModal').modal('show');
-        
-        // สั่งให้ระบบเลือกโรงงานอัตโนมัติ ตามสาขาที่โชว์อยู่
         $('#outboundBranch').trigger('change');
     });
     
-    // 🚀 1. โหลดข้อมูลลงตาราง
+    // 🚀 1. โหลดข้อมูลลงตาราง และ การ์ดมือถือ
     function loadOutbounds() {
         $.get('/myproject_nodejs/api/outbounds', function(response) {
             if (response.status === 'success') {
                 let rows = '';
+                let mobileCards = ''; // 🟢 ตัวแปรเก็บ HTML สำหรับมือถือ
+
                 response.data.forEach(o => {
                     let btnClose = '';
                     let btnCancel = '';
                     let statusBadge = '';
+                    let borderColor = 'border-left-secondary'; // ค่าเริ่มต้นสีขอบการ์ด
 
-                    // เช็คสถานะเพื่อวาดปุ่ม
+                    // เช็คสถานะเพื่อวาดปุ่มและสีขอบ
                     if (o.status === 'processing') {
                         statusBadge = '<span class="badge badge-warning text-dark"><i class="fas fa-truck"></i> กำลังส่ง</span>';
+                        borderColor = 'border-left-warning';
                         btnClose = `<button class="btn btn-sm btn-success btn-close-bill" data-info='${encodeURIComponent(JSON.stringify(o))}' title="ปิดบิล (ใส่ข้อมูลโรงงาน)"><i class="fas fa-check-circle"></i> ปิดยอด</button>`;
                         btnCancel = `<button class="btn btn-sm btn-danger btn-cancel-bill" data-id="${o.id}" data-no="${o.delivery_no}" title="ยกเลิกบิล (คืนสต็อก)"><i class="fas fa-times"></i></button>`;
                     } else if (o.status === 'completed') {
                         statusBadge = '<span class="badge badge-success"><i class="fas fa-check"></i> เสร็จสิ้น</span>';
-                        // ถ้าเสร็จแล้ว โชว์กำไรแทนปุ่ม
-                        let profitClass = o.net_profit >= 0 ? 'text-success' : 'text-danger';
-                        btnClose = `<span class="font-weight-bold ${profitClass}">${parseFloat(o.net_profit).toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span>`;
+                        borderColor = 'border-left-success';
+                        
+                        // 🟢 อัปเกรด: เปลี่ยนจากแค่ตัวหนังสือ ให้กลายเป็นปุ่มกดได้
+                        let profitClass = o.net_profit >= 0 ? 'btn-outline-success' : 'btn-outline-danger';
+                        let profitIcon = o.net_profit >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+                        let oData = encodeURIComponent(JSON.stringify(o));
+                        
+                        btnClose = `<button class="btn btn-sm ${profitClass} btn-summary-bill" data-info="${oData}" title="ดูสรุปการจัดส่ง"><i class="fas ${profitIcon}"></i> สรุปยอด: ${parseFloat(o.net_profit).toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</button>`;
                     } else {
                         statusBadge = '<span class="badge badge-secondary"><i class="fas fa-ban"></i> ยกเลิก</span>';
+                        borderColor = 'border-left-danger';
                     }
 
+                    let weightText = parseFloat(o.yard_net_weight).toLocaleString('en-US', {minimumFractionDigits: 2});
+
+                    // =====================================
+                    // 💻 สำหรับ Desktop (Table)
+                    // =====================================
                     rows += `
                         <tr>
                             <td class="text-center font-weight-bold">${o.delivery_no}</td>
                             <td class="text-center">${o.formatted_date}</td>
                             <td><span class="badge badge-info">${o.branch_name}</span></td>
                             <td>${o.factory_name}</td>
-                            <td class="text-right font-weight-bold">${parseFloat(o.yard_net_weight).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td class="text-right font-weight-bold">${weightText}</td>
                             <td class="text-center">${statusBadge}</td>
                             <td class="text-center" style="white-space: nowrap;">
                                 ${btnClose} ${btnCancel}
                             </td>
                         </tr>
                     `;
+
+                    // =====================================
+                    // 📱 สำหรับ Mobile (Cards)
+                    // =====================================
+                    mobileCards += `
+                        <div class="col-12 mb-3">
+                            <div class="card ${borderColor} shadow-sm h-100">
+                                <div class="card-body py-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                                        <span class="font-weight-bold text-primary"><i class="fas fa-file-invoice"></i> ${o.delivery_no}</span>
+                                        ${statusBadge}
+                                    </div>
+                                    <div class="text-sm text-muted mb-3">
+                                        <div class="mb-1"><i class="far fa-calendar-alt fa-fw"></i> ${o.formatted_date}</div>
+                                        <div class="mb-1"><strong><i class="fas fa-store fa-fw"></i> ต้นทาง:</strong> <span class="badge badge-info">${o.branch_name}</span></div>
+                                        <div><strong><i class="fas fa-industry fa-fw"></i> ปลายทาง:</strong> ${o.factory_name}</div>
+                                    </div>
+                                    <div class="bg-light p-2 rounded text-center mb-2 border">
+                                        <small class="text-muted">น้ำหนักชั่งลาน</small><br>
+                                        <span class="h5 font-weight-bold text-dark mb-0">${weightText} กก.</span>
+                                    </div>
+                                    <div class="text-right border-top pt-2 mt-2">
+                                        ${btnClose} ${btnCancel}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 });
                 
+                // อัปเดตตาราง Desktop
                 if ($.fn.DataTable.isDataTable('#outboundTable')) {
                     $('#outboundTable').DataTable().clear().destroy();
                 }
@@ -247,6 +396,12 @@ $(document).ready(function() {
                     language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' },
                     order: [[0, 'desc']]
                 });
+
+                // 🟢 อัปเดต Card มือถือ
+                if (mobileCards === '') {
+                    mobileCards = '<div class="col-12 text-center text-muted py-4">ไม่พบข้อมูลบิลส่งออก</div>';
+                }
+                $('#outboundListMobile').html(mobileCards);
             }
         });
     }
@@ -275,7 +430,7 @@ $(document).ready(function() {
         });
     });
 
-    // 🚀 3. เปิด Modal ปิดบิลโรงงาน
+    // 🚀 3. เปิด Modal ปิดบิลโรงงาน (รองรับทั้งการกดจากตารางและการ์ดมือถือ)
     $(document).on('click', '.btn-close-bill', function() {
         let data = JSON.parse(decodeURIComponent($(this).data('info')));
         
@@ -283,6 +438,9 @@ $(document).ready(function() {
         $('#closeTxId').val(data.id);
         $('#closeDeliveryNo').text(data.delivery_no);
         $('#closeYardWeight').text(parseFloat(data.yard_net_weight).toLocaleString('en-US', {minimumFractionDigits: 2}));
+        
+        // รีเซ็ตสีกำไร
+        $('#netProfit').val('').removeClass('text-success text-danger');
         
         $('#closeOutboundModal').modal('show');
     });
@@ -294,14 +452,12 @@ $(document).ready(function() {
         let price = parseFloat($('#facPrice').val()) || 0;
         let cost = parseFloat($('#totalCost').val()) || 0;
 
-        // สูตรคำนวณรายได้: (น้ำหนัก * DRC%) * ราคาโรงงาน
         let dryRubber = weight * (drc / 100);
         let revenue = dryRubber * price;
         let profit = revenue - cost;
 
         $('#totalRev').val(revenue.toFixed(2));
         
-        // เปลี่ยนสีกำไร
         let profitInput = $('#netProfit');
         profitInput.val(profit.toFixed(2));
         if (profit >= 0) {
@@ -327,7 +483,7 @@ $(document).ready(function() {
         });
     });
 
-    // 🚀 5. ยกเลิกบิล (และคืนสต็อก)
+    // 🚀 5. ยกเลิกบิล (รองรับทั้งการกดจากตารางและการ์ดมือถือ)
     $(document).on('click', '.btn-cancel-bill', function() {
         let id = $(this).data('id');
         let no = $(this).data('no');
@@ -353,6 +509,78 @@ $(document).ready(function() {
                 });
             }
         });
+    });
+    // ==========================================
+    // 🚀 เปิด Modal สรุปรายการบิลที่ปิดยอดแล้ว
+    // ==========================================
+    $(document).on('click', '.btn-summary-bill', function() {
+        let data = JSON.parse(decodeURIComponent($(this).data('info')));
+        
+        // 1. ข้อมูลทั่วไป
+        $('#sumDeliveryNo').text(data.delivery_no);
+        $('#sumBranch').text(data.branch_name);
+        $('#sumFactory').text(data.factory_name);
+        $('#sumDate').text(data.formatted_date);
+
+        // 2. คำนวณยางแห้ง (Dry Rubber)
+        let yardWeight = parseFloat(data.yard_net_weight) || 0;
+        let yardDrc = parseFloat(data.yard_drc_percent) || 0;
+        let yardDry = yardWeight * (yardDrc / 100);
+
+        let facWeight = parseFloat(data.factory_net_weight) || 0;
+        let facDrc = parseFloat(data.factory_drc_percent) || 0;
+        let facDry = facWeight * (facDrc / 100);
+
+        // ส่วนต่าง
+        let diffWeight = facWeight - yardWeight;
+        let diffDrc = facDrc - yardDrc;
+        let diffDry = facDry - yardDry;
+
+        // ฟังก์ชันช่วยใส่สี (เขียว=บวก, แดง=ลบ)
+        const formatDiff = (val, isPercent = false) => {
+            let color = val >= 0 ? 'text-success' : 'text-danger';
+            let sign = val > 0 ? '+' : '';
+            return `<span class="${color}">${sign}${val.toLocaleString('en-US', {minimumFractionDigits: 2})} ${isPercent ? '%' : ''}</span>`;
+        };
+
+        // 3. หยอดข้อมูลลงตารางเปรียบเทียบ
+        $('#sumYardWeight').text(yardWeight.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#sumFacWeight').text(facWeight.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#sumDiffWeight').html(formatDiff(diffWeight));
+
+        $('#sumYardDrc').text(yardDrc.toLocaleString('en-US', {minimumFractionDigits: 2}) + '%');
+        $('#sumFacDrc').text(facDrc.toLocaleString('en-US', {minimumFractionDigits: 2}) + '%');
+        $('#sumDiffDrc').html(formatDiff(diffDrc, true));
+
+        $('#sumYardDry').text(yardDry.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#sumFacDry').text(facDry.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#sumDiffDry').html(formatDiff(diffDry));
+
+        // 4. หยอดข้อมูลการเงิน
+        $('#sumUnitPrice').text(parseFloat(data.factory_unit_price).toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#sumTotalRev').text(parseFloat(data.total_revenue).toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#sumTotalCost').text(parseFloat(data.total_cost).toLocaleString('en-US', {minimumFractionDigits: 2}));
+        
+        let tCost = parseFloat(data.transport_cost) || 0;
+        $('#sumTransportCost').text(`(รวมค่าขนส่ง: ${tCost.toLocaleString()} ฿)`);
+
+        // สรุปกำไร/ขาดทุน
+        let netProfit = parseFloat(data.net_profit) || 0;
+        let profitBox = $('#sumProfitBox');
+        let profitText = $('#sumNetProfit');
+        
+        profitText.text((netProfit > 0 ? '+' : '') + netProfit.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' บาท');
+
+        if (netProfit >= 0) {
+            profitBox.css({'background-color': '#e3fbe3', 'border-color': '#1cc88a'});
+            profitText.removeClass('text-danger').addClass('text-success');
+        } else {
+            profitBox.css({'background-color': '#ffe8e8', 'border-color': '#e74a3b'});
+            profitText.removeClass('text-success').addClass('text-danger');
+        }
+
+        // โชว์หน้าต่าง
+        $('#summaryOutboundModal').modal('show');
     });
 });
 </script>
