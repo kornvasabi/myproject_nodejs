@@ -253,12 +253,6 @@ $(document).ready(function() {
 
     loadOutbounds();
 
-    // 🚀 2. เปิด Modal สร้างบิลส่งออก
-    $('#btnAddOutbound').click(function() {
-        $('#createOutboundForm')[0].reset();
-        $('#createOutboundModal').modal('show');
-    });
-
     // บันทึกสร้างบิลส่งออก
     $('#createOutboundForm').submit(function(e) {
         e.preventDefault();

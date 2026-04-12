@@ -23,7 +23,7 @@ exports.outboundPage = async (req, res) => {
             factoriesParams.push(userBranchId);
         } else if (accessLevel === 2) {
             branchSql += ' AND (id = ? OR id IN (SELECT branch_id FROM user_branches WHERE user_id = ?))';
-            factoriesSql += ' AND (branch_id = ? OR id IN (SELECT branch_id FROM user_branches WHERE user_id = ?))';
+            factoriesSql += ' AND (branch_id = ? OR branch_id IN (SELECT branch_id FROM user_branches WHERE user_id = ?))';
             
             branchParams.push(userBranchId, userId);
             factoriesParams.push(userBranchId, userId);
@@ -35,7 +35,8 @@ exports.outboundPage = async (req, res) => {
         res.render('outbounds', { 
             title: 'ส่งน้ำยางเข้าโรงงาน', 
             branches: branches, 
-            factories: factories 
+            factories: factories,
+            accessLevel: accessLevel
         });
     } catch (error) {
         console.error("Outbound Page Error:", error);
@@ -63,7 +64,7 @@ exports.getOutbounds = async (req, res) => {
         let params = [];
 
         if (accessLevel === 3){
-            sql += ` and o.branch_id ? `;
+            sql += ` AND o.branch_id = ? `;
             params.push(userBranchId); 
         }else if(accessLevel === 2){
             sql += ` AND (o.branch_id = ? OR o.branch_id IN (SELECT branch_id FROM user_branches WHERE user_id = ?)) `;
