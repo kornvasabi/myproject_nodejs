@@ -149,10 +149,10 @@ const updateUser = async (req, res) => {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
             sqlUpdate = `UPDATE users SET password = ?, fullname = ?, group_id = ?, branch_id = ?, dept_id = ?, force_logout = ?, expires_at = ? WHERE id = ?`;
-            queryParams = [hashedPassword, fullname, g_id, b_id, d_id, force_logout, id];
+            queryParams = [hashedPassword, fullname, g_id, b_id, d_id, force_logout, paramExpiresAt, id];
         } else {
             sqlUpdate = `UPDATE users SET fullname = ?, group_id = ?, branch_id = ?, dept_id = ?, force_logout = ?, expires_at = ? WHERE id = ?`;
-            queryParams = [fullname, g_id, b_id, d_id, force_logout, id ,paramExpiresAt];
+            queryParams = [fullname, g_id, b_id, d_id, force_logout, paramExpiresAt, id];
         }
         await db.query(sqlUpdate, queryParams);
 
