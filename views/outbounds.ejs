@@ -421,11 +421,21 @@ $(document).ready(function() {
                 $('#createOutboundModal').modal('hide');
                 loadOutbounds(); 
             } else {
-                Swal.fire('ข้อผิดพลาด', response.message, 'warning');
+                // 🟢 กรณีที่ Backend ส่ง HTTP 200 แต่แนบ status: 'error' มา
+                Swal.fire('แจ้งเตือน', response.message, 'warning');
             }
-        }).fail(function() {
-            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+        }).fail(function(xhr) {
+            // 🚀 🟢 จุดที่แก้ไข: ดึงข้อความ Error จริงๆ จาก Backend (ที่ส่งมากับ Status 500) มาแสดง
+            let errorMsg = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
+            
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMsg = xhr.responseJSON.message; // ดึงข้อความ "สต็อกน้ำยางไม่เพียงพอ..." มาใช้
+            }
+            
+            Swal.fire('ข้อผิดพลาด', errorMsg, 'error');
+            
         }).always(function() {
+            // ปลดล็อกปุ่มเมื่อทำงานเสร็จ (ไม่ว่าจะผ่านหรือพัง)
             btn.html(originalText).prop('disabled', false);
         });
     });
