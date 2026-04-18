@@ -10,7 +10,7 @@
             <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-filter"></i> ระบุเงื่อนไขการออกรายงาน</h6>
         </div>
         <div class="card-body">
-            <!-- form action="/myproject_nodejs/export/issues/excel" method="GET" target="_blank">
+            <!-- form action="<%= baseUrl %>/export/issues/excel" method="GET" target="_blank">
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label class="font-weight-bold">ตั้งแต่วันที่:</label>
@@ -41,7 +41,7 @@
                     </div>
 
                     <div class="col-md-3 mb-3 d-flex align-items-end">
-                        <button type="submit" formaction="/myproject_nodejs/export/issues/excel" class="btn btn-success btn-block shadow-sm">
+                        <button type="submit" formaction="<%= baseUrl %>/export/issues/excel" class="btn btn-success btn-block shadow-sm">
                             <i class="fas fa-file-excel"></i> ส่งออก Excel
                         </button>
                     </div>
@@ -85,7 +85,7 @@
             });
 
             try {
-                const response = await fetch(`/myproject_nodejs/export/issues/pdf?startDate=${startDate}&endDate=${endDate}`);
+                const response = await fetch(`<%= baseUrl %>/export/issues/pdf?startDate=${startDate}&endDate=${endDate}`);
                 
                 if (!response.ok) {
                     throw new Error('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');

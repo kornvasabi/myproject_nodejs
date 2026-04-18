@@ -338,7 +338,7 @@
 
             $.ajax({
                 type: 'POST',
-                url: '/myproject_nodejs/api/add_user',
+                url: '<%= baseUrl %>/api/add_user',
                 data: formData,
                 success: function(response) {
                     if (response.status === 'success') {
@@ -395,7 +395,7 @@
             let userId = $(this).data('id');
 
             $.ajax({
-                url: '/myproject_nodejs/api/get_user/' + userId,
+                url: '<%= baseUrl %>/api/get_user/' + userId,
                 type: 'GET',
                 success: function(res) {
                     if (res.status === 'success') {
@@ -440,7 +440,7 @@
 
             $.ajax({
                 type: 'POST',
-                url: '/myproject_nodejs/api/update_user',
+                url: '<%= baseUrl %>/api/update_user',
                 data: formData,
                 success: function(response) {
                     if (response.status === 'success') {
@@ -505,7 +505,7 @@
                 if (result.isConfirmed) {
                     $.ajax({
                         type: 'POST',
-                        url: '/myproject_nodejs/api/delete_user',
+                        url: '<%= baseUrl %>/api/delete_user',
                         data: { id: userId },
                         success: function(response) {
                             if (response.status === 'success') {

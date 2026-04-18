@@ -47,7 +47,7 @@
 
             try {
                 // 🚀 2. ยิงไฟล์ไปให้หลังบ้าน (Node.js) ผ่าน fetch API
-                const response = await fetch('/myproject_nodejs/api/import/excel', {
+                const response = await fetch('<%= baseUrl %>/api/import/excel', {
                     method: 'POST',
                     body: formData // โยนกล่อง FormData ไปเลย
                 });

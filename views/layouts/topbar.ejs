@@ -26,12 +26,12 @@
 								aria-labelledby="languageDropdown">
 								
 								<a class="dropdown-item btn-change-lang <%= currentLang === 'th' ? 'active' : '' %>" 
-								   href="/myproject_nodejs/change-lang/th">
+								   href="<%= baseUrl %>/change-lang/th">
 									🇹🇭 ภาษาไทย
 								</a>
 								
 								<a class="dropdown-item btn-change-lang <%= currentLang === 'en' ? 'active' : '' %>" 
-								   href="/myproject_nodejs/change-lang/en">
+								   href="<%= baseUrl %>/change-lang/en">
 									🇬🇧 English
 								</a>
 								
@@ -55,7 +55,7 @@
 								<span class="mr-2 d-none d-lg-inline text-gray-600 small font-weight-bold">
 									<span class="badge badge-info ml-1"><%= user.branch_name || 'ไม่ระบุสาขา' %></span>
 								</span>
-                                <img class="img-profile rounded-circle" src="/myproject_nodejs/img/undraw_profile.svg">
+                                <img class="img-profile rounded-circle" src="<%= baseUrl %>/img/undraw_profile.svg">
                             </a>
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
                                 <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">

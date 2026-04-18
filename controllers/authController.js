@@ -1,5 +1,7 @@
 const db = require('../config/db'); 
 const bcrypt = require('bcryptjs');
+// ดึงค่า BASE_URL จากไฟล์ .env (ถ้าไม่มีให้เป็นค่าว่าง)
+const baseUrl = process.env.BASE_URL || '';
 
 const login = async (req, res) => {
     // รับค่าที่ส่งมาจากฟอร์ม Login
@@ -78,7 +80,7 @@ const login = async (req, res) => {
                 }
 
                 // สั่ง Redirect ไปหน้า Dashboard
-                return res.redirect('/myproject_nodejs/dashboard');
+                return res.redirect(`${baseUrl}/dashboard`);
             }
         }
 
@@ -97,14 +99,14 @@ const logout = (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             console.error("Logout Error:", err);
-            return res.redirect('/myproject_nodejs/dashboard');
+            return res.redirect(`${baseUrl}/dashboard`);
         }
         
         // ล้าง Cookie (เพื่อความปลอดภัยระดับสูงสุด สไตล์ IT Support)
         res.clearCookie('connect.sid'); 
         
         // เด้งผู้ใช้กลับไปที่หน้า Login
-        res.redirect('/myproject_nodejs/');
+        res.redirect(`${baseUrl}/`);
     });
 };
 

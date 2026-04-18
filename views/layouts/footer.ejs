@@ -22,27 +22,27 @@
                 <div class="modal-body">คุณต้องการออกจากระบบใช่หรือไม่?</div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">ยกเลิก</button>
-                    <a class="btn btn-primary" href="/myproject_nodejs/auth/logout">ยืนยัน</a>
+                    <a class="btn btn-primary" href="<%= baseUrl %>/auth/logout">ยืนยัน</a>
                 </div>
             </div>
         </div>
     </div>
 	<%- include('../components/global-modal') %>
 	
-	<!-- script src="/myproject_nodejs/js/app-global.js"></script -->
-    <script src="/myproject_nodejs/vendor/jquery/jquery.min.js"></script>
-    <script src="/myproject_nodejs/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="/myproject_nodejs/js/sb-admin-2.min.js"></script>
+	<!-- script src="<%= baseUrl %>/js/app-global.js"></script -->
+    <script src="<%= baseUrl %>/vendor/jquery/jquery.min.js"></script>
+    <script src="<%= baseUrl %>/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<%= baseUrl %>/js/sb-admin-2.min.js"></script>
 
-    <link href="/myproject_nodejs/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-    <script src="/myproject_nodejs/vendor/datatables/jquery.dataTables.min.js"></script>
-    <script src="/myproject_nodejs/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <link href="<%= baseUrl %>/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <script src="<%= baseUrl %>/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="<%= baseUrl %>/vendor/datatables/dataTables.bootstrap4.min.js"></script>
 
     
 	
 	<%- include('../components/global-modal') %>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/myproject_nodejs/js/app-tools.js"></script>
+    <script src="<%= baseUrl %>/js/app-tools.js"></script>
 	<script>
 	$(document).ready(function () {
 		// ✅ ถ้ามี state บันทึกไว้ → apply class ให้ถูกต้อง แล้วลบ attribute ชั่วคราวออก
@@ -111,7 +111,7 @@
         // 🟢 4. ตั้งนาฬิกาปลุก เตะออกจากระบบ (เด้งตอนวินาทีที่ 60)
         let logoutTimer = setTimeout(function() {
             // หมดเวลาปุ๊บ จับเตะไปหน้า Login ทันที
-            window.location.href = '/myproject_nodejs/'; 
+            window.location.href = '<%= baseUrl %>/'; 
         }, timeoutMs);
 
         // ==========================================
@@ -140,7 +140,7 @@
             }, warningMs);
 
             logoutTimer = setTimeout(function() { 
-                window.location.href = '/myproject_nodejs/'; 
+                window.location.href = '<%= baseUrl %>/'; 
             }, timeoutMs);
         }
 

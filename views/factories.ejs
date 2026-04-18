@@ -98,7 +98,7 @@ $(document).ready(function() {
     
     // 🚀 1. โหลดข้อมูลลงตารางและการ์ดมือถือ
     function loadFactories() {
-        $.get('/myproject_nodejs/api/factories', function(response) {
+        $.get('<%= baseUrl %>/api/factories', function(response) {
             if (response.status === 'success') {
                 let rows = '';
                 let mobileCards = ''; // 🟢 ตัวแปรเก็บ HTML สำหรับมือถือ
@@ -200,7 +200,7 @@ $(document).ready(function() {
         e.preventDefault();
         
         let id = $('#factoryId').val();
-        let url = id ? '/myproject_nodejs/api/factories/update/' + id : '/myproject_nodejs/api/factories/add';
+        let url = id ? '<%= baseUrl %>/api/factories/update/' + id : '<%= baseUrl %>/api/factories/add';
         let formData = $(this).serialize();
 
         $.post(url, formData, function(response) {
@@ -232,7 +232,7 @@ $(document).ready(function() {
             cancelButtonText: 'ปิด'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post('/myproject_nodejs/api/factories/delete/' + id, function(response) {
+                $.post('<%= baseUrl %>/api/factories/delete/' + id, function(response) {
                     if(response.status === 'success') {
                         Swal.fire('ยกเลิกสำเร็จ!', response.message, 'success');
                         loadFactories(); 

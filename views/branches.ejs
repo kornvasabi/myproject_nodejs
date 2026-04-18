@@ -89,7 +89,7 @@ $(document).ready(function() {
     
     // 🚀 1. โหลดข้อมูลลงตาราง
     function loadBranches() {
-        $.get('/myproject_nodejs/api/branches', function(response) {
+        $.get('<%= baseUrl %>/api/branches', function(response) {
             if (response.status === 'success') {
                 let rows = '';
                 response.data.forEach(b => {
@@ -155,7 +155,7 @@ $(document).ready(function() {
         e.preventDefault();
         
         let id = $('#branchId').val();
-        let url = id ? '/myproject_nodejs/api/branches/update/' + id : '/myproject_nodejs/api/branches/add';
+        let url = id ? '<%= baseUrl %>/api/branches/update/' + id : '<%= baseUrl %>/api/branches/add';
         let formData = $(this).serialize();
 
         $.post(url, formData, function(response) {
@@ -185,7 +185,7 @@ $(document).ready(function() {
             cancelButtonText: 'ปิด'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post('/myproject_nodejs/api/branches/delete/' + id, function(response) {
+                $.post('<%= baseUrl %>/api/branches/delete/' + id, function(response) {
                     if(response.status === 'success') {
                         Swal.fire('ยกเลิกสำเร็จ!', response.message, 'success');
                         loadBranches(); 

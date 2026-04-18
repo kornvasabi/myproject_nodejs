@@ -548,7 +548,7 @@
         historyBody.html('<tr><td colspan="3" class="text-center"><i class="fas fa-spinner fa-spin"></i> กำลังโหลดประวัติ...</td></tr>');
 
         $.ajax({
-            url: '/myproject_nodejs/api/parasales_list/history/' + customerId,
+            url: '<%= baseUrl %>/api/parasales_list/history/' + customerId,
             type: 'GET',
             success: function(response) {
                 if (response.status === 'success' && response.data.length > 0) {
@@ -585,7 +585,7 @@
         submitBtn.html('<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...').prop('disabled', true);
 
         $.ajax({
-            url: '/myproject_nodejs/api/parasales_list/add',
+            url: '<%= baseUrl %>/api/parasales_list/add',
             type: 'POST',
             data: formData,
             success: function(response) {
@@ -716,7 +716,7 @@
 
 		// ยิง AJAX ไปขอข้อมูล
 		$.ajax({
-			url: '/myproject_nodejs/api/parasales_list/detail/' + txId,
+			url: '<%= baseUrl %>/api/parasales_list/detail/' + txId,
 			type: 'GET',
 			success: function(response) {
 				if (response.status === 'success') {
@@ -797,7 +797,7 @@
                 let originalHtml = btn.html();
                 btn.html('<i class="fas fa-spinner fa-spin"></i> กำลังดำเนินการ...').prop('disabled', true);
 
-                $.post('/myproject_nodejs/api/parasales_list/cancel/' + txId, function(response) {
+                $.post('<%= baseUrl %>/api/parasales_list/cancel/' + txId, function(response) {
                     if (response.status === 'success') {
                         $('#viewDetailModal').modal('hide');
                         Swal.fire('ยกเลิกสำเร็จ!', response.message, 'success').then(() => {

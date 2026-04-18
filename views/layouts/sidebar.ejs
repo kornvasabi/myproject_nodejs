@@ -1,6 +1,6 @@
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
-    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/myproject_nodejs/dashboard">
+    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="<%= baseUrl %>/dashboard">
         <div class="sidebar-brand-text mx-3">Myproject WW</div>
     </a>
     <hr class="sidebar-divider my-0">
@@ -11,7 +11,7 @@
             <% let menuPath = '/' + menu.link.replace('.php', ''); %>
             
             <li class="nav-item <%= currentPath === menuPath ? 'active' : '' %>">
-                <a class="nav-link" href="/myproject_nodejs<%= menuPath %>">
+                <a class="nav-link" href="<%= baseUrl %><%= menuPath %>">
                     <i class="<%= menu.icon %>"></i>
                     <span><%= __('menu.dashboard') %></span>
                 </a>
@@ -40,7 +40,7 @@
                             <% let childPath = '/' + child.link.replace('.php', ''); %>
                             
                             <a class="collapse-item <%= currentPath === childPath ? 'active' : '' %>" 
-                               href="/myproject_nodejs<%= childPath %>">
+                               href="<%= baseUrl %><%= childPath %>">
                                 <%= child.menu_name %>
                             </a>
                         <% }); %>

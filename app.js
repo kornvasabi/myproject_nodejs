@@ -1,3 +1,5 @@
+// 1. 🟢 โหลด dotenv เป็นบรรทัดแรกสุดของไฟล์เลยครับ (สำคัญมาก!)
+require('dotenv').config();
 // โหลดเครื่องมือที่ติดตั้งไว้
 const express = require('express');
 const session = require('express-session');
@@ -15,6 +17,11 @@ const branchController = require('./controllers/branchController'); // สาข
 const priceController = require('./controllers/priceController'); //กำหนดราคา
 const factoryController = require('./controllers/factoryController'); //ตั้งค่าโรงงานปลายทาง
 const outboundController = require('./controllers/outboundController'); //บันทึกข้อมูลส่งน้ำยางโรงงาน
+
+app.locals.baseUrl = process.env.BASE_URL || '';
+
+// ลอง console.log ดูว่าค่ามาไหม
+// console.log('🚀 Base URL is set to:', app.locals.baseUrl);
 
 // 🚀 นำโค้ดนี้ไปวางไว้บนๆ (ก่อนถึงพวก app.use(express.static...))
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));

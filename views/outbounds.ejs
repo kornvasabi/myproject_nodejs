@@ -307,7 +307,7 @@ $(document).ready(function() {
     
     // 🚀 1. โหลดข้อมูลลงตาราง และ การ์ดมือถือ
     function loadOutbounds() {
-        $.get('/myproject_nodejs/api/outbounds', function(response) {
+        $.get('<%= baseUrl %>/api/outbounds', function(response) {
             if (response.status === 'success') {
                 let rows = '';
                 let mobileCards = ''; // 🟢 ตัวแปรเก็บ HTML สำหรับมือถือ
@@ -415,7 +415,7 @@ $(document).ready(function() {
         let originalText = btn.html();
         btn.html('<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบ...').prop('disabled', true);
 
-        $.post('/myproject_nodejs/api/outbounds/add', $(this).serialize(), function(response) {
+        $.post('<%= baseUrl %>/api/outbounds/add', $(this).serialize(), function(response) {
             if(response.status === 'success') {
                 Swal.fire({ icon: 'success', title: 'สำเร็จ', text: response.message, showConfirmButton: false, timer: 2000 });
                 $('#createOutboundModal').modal('hide');
@@ -482,7 +482,7 @@ $(document).ready(function() {
         e.preventDefault();
         let id = $('#closeTxId').val();
         
-        $.post('/myproject_nodejs/api/outbounds/close/' + id, $(this).serialize(), function(response) {
+        $.post('<%= baseUrl %>/api/outbounds/close/' + id, $(this).serialize(), function(response) {
             if(response.status === 'success') {
                 Swal.fire({ icon: 'success', title: 'ปิดบิลสำเร็จ', text: response.message, showConfirmButton: false, timer: 1500 });
                 $('#closeOutboundModal').modal('hide');
@@ -509,7 +509,7 @@ $(document).ready(function() {
             cancelButtonText: 'ปิด'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post('/myproject_nodejs/api/outbounds/cancel/' + id, function(response) {
+                $.post('<%= baseUrl %>/api/outbounds/cancel/' + id, function(response) {
                     if(response.status === 'success') {
                         Swal.fire('คืนของสำเร็จ!', response.message, 'success');
                         loadOutbounds(); 

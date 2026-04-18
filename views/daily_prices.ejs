@@ -108,7 +108,7 @@ $(document).ready(function() {
     
     // 🚀 ฟังก์ชันโหลดข้อมูลราคา
     function loadPrices() {
-        $.get('/myproject_nodejs/api/daily_prices', function(response) {
+        $.get('<%= baseUrl %>/api/daily_prices', function(response) {
             if (response.status === 'success') {
                 let rows = '';
                 let mobileCards = ''; // 🟢 ตัวแปรเก็บ HTML สำหรับมือถือ
@@ -227,7 +227,7 @@ $(document).ready(function() {
         e.preventDefault();
         
         let id = $('#priceId').val();
-        let url = id ? '/myproject_nodejs/api/daily_prices/update/' + id : '/myproject_nodejs/api/daily_prices/add';
+        let url = id ? '<%= baseUrl %>/api/daily_prices/update/' + id : '<%= baseUrl %>/api/daily_prices/add';
         let formData = $(this).serialize();
 
         $.post(url, formData, function(response) {
@@ -259,7 +259,7 @@ $(document).ready(function() {
             cancelButtonText: 'ปิด'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post('/myproject_nodejs/api/daily_prices/delete/' + id, function(response) {
+                $.post('<%= baseUrl %>/api/daily_prices/delete/' + id, function(response) {
                     if(response.status === 'success') {
                         Swal.fire('ยกเลิกสำเร็จ!', response.message, 'success');
                         loadPrices(); 
